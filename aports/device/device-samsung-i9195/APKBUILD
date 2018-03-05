@@ -8,6 +8,7 @@ license="MIT"
 arch="noarch"
 options="!check"
 depends="postmarketos-base linux-samsung-i9195 mkbootimg"
+subpackages="$pkgname-nonfree-firmware:nonfree_firmware"
 makedepends="devicepkg-dev"
 source="deviceinfo"
 
@@ -17,6 +18,12 @@ build() {
 
 package() {
 	devicepkg_package $startdir $pkgname
+}
+
+nonfree_firmware() {
+	pkgdesc="Modem firmware"
+	depends="firmware-samsung-i9195-modem"
+	mkdir "$subpkgdir"
 }
 
 sha512sums="db89ff314a38c4ea37b128ea1eca00e5e0cffb660e07f2c4852725358bed3b94f834bbff91681a74e8b58ad972a87d9a6e7505c3530b11ab909c685721e75fcf  deviceinfo"

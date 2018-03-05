@@ -1,0 +1,48 @@
+# Contributor: Joey Hewitt <joey@joeyhewitt.com>
+# Maintainer: Joey Hewitt <joey@joeyhewitt.com>
+pkgname=firmware-samsung-i9195
+pkgver=201707.1
+# see notes in XDA post below about the meaning of the firmware version, which I've translated into pkgver
+_ver=I9195XXUCQG1
+pkgrel=1
+pkgdesc="Samsung Galaxy S 4 Mini firmware"
+subpackages="$pkgname-modem"
+url="https://forum.xda-developers.com/galaxy-s4-mini/general/modem-samsung-galaxy-s4-mini-gt-i9195-t3390780"
+arch="noarch"
+license="proprietary"
+# build system wants to strip binaries, so stop that, and thinks they are wrong arch, so ignore that
+options="!strip !archcheck"
+makedepends="p7zip"
+
+source="$_ver.tar::https://wa1.androidfilehost.com/dl/gMdb8sYfl8Zy2_daybpA-Q/1520163411/889964283620758806/I9195XXUCQG1.tar.md5
+SHA512SUMS.modem"
+
+unpack() {
+	default_unpack
+
+	# NON-HLOS.bin is a FAT image
+	# expand file to correct size, so 7z doesn't error (get image's sector count from 'file' output, multiply by 512)
+	truncate -c -s 67108864 "$srcdir"/NON-HLOS.bin
+	7z e -o"$srcdir" "$srcdir"/NON-HLOS.bin
+}
+
+check() {
+	cd "$srcdir"
+	sha512sum -w -c "$srcdir"/SHA512SUMS.modem
+}
+
+package() {
+	# parent package is empty
+	mkdir -p "$pkgdir"
+}
+
+modem() {
+	pkgdesc="Samsung Galaxy S 4 Mini modem firmware"
+
+	for _i in $(tr -s ' ' < SHA512SUMS.modem | cut -d ' ' -f 2); do
+		install -Dm644 "$srcdir"/$_i "$subpkgdir"/lib/firmware/postmarketos/$_i
+	done
+}
+
+sha512sums="cf6d71879ef3f47e3e6394edf79440f67ed9b5bbbd7b59eb6cbc8e5df8d8381b3d2a168595ecf1a2e7f9b2370c1bd3705346047d5675e33e27f6b2bcd2855976  I9195XXUCQG1.tar
+ef00725831dff88a1ae0cf3dd15de21af56dec8545f65b977d665025e078d0423105c1458797b9a11041a5986346cfdcfaf437d98d0e42f1c9c037b775cf3682  SHA512SUMS.modem"
