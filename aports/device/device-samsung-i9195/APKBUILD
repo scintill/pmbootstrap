@@ -2,12 +2,12 @@
 pkgname="device-samsung-i9195"
 pkgdesc="Samsung Galaxy S4 Mini"
 pkgver=0.2
-pkgrel=2
+pkgrel=3
 url="https://postmarketos.org"
 license="MIT"
 arch="noarch"
 options="!check"
-depends="postmarketos-base linux-samsung-i9195 mkbootimg"
+depends="postmarketos-base linux-samsung-i9195 mkbootimg rmtfs libqipcrtr4msmipc libsmdpkt_wrapper"
 subpackages="$pkgname-nonfree-firmware:nonfree_firmware"
 makedepends="devicepkg-dev"
 source="deviceinfo"
@@ -18,6 +18,11 @@ build() {
 
 package() {
 	devicepkg_package $startdir $pkgname
+
+	mkdir "$pkgdir"/boot
+	ln -s /dev/disk/by-partlabel/modemst1 "$pkgdir"/boot/modem_fs1
+	ln -s /dev/disk/by-partlabel/modemst2 "$pkgdir"/boot/modem_fs2
+	ln -s /dev/disk/by-partlabel/fsg      "$pkgdir"/boot/modem_fsg
 }
 
 nonfree_firmware() {
