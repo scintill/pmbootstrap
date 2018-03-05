@@ -1,0 +1,33 @@
+# Contributor: Joey Hewitt <joey@joeyhewitt.com>
+# Maintainer: Joey Hewitt <joey@joeyhewitt.com>
+pkgname=rmtfs
+pkgver=0.0_git20180131
+pkgrel=0
+pkgdesc="Qualcomm Remote Filesystem Service Implementation"
+url="https://github.com/andersson/rmtfs"
+arch="all"
+license="BSD-3-Clause"
+depends="qrtr"
+makedepends="eudev-dev qrtr-dev msmipc-dev"
+subpackages="$pkgname-doc"
+_commit="0f800fa4334b03a47941ce1b577f51a69552e414"
+source="
+	rmtfs.tgz::https://github.com/andersson/rmtfs/archive/"$_commit".tar.gz
+	support-uio.patch
+	"
+builddir="$srcdir""/rmtfs-"$_commit
+options="!check"
+
+build() {
+	cd "$builddir"
+	make C_INCLUDE_PATH=/usr/src/msmipc-dev/include rmtfs
+}
+
+package() {
+	cd "$builddir"
+	install -D -m 755 rmtfs "$pkgdir"/usr/bin/rmtfs
+	install -Dm644 LICENSE "$pkgdir"/usr/share/licenses/$pkgname/COPYING
+}
+
+sha512sums="4b49cdf9d778bf6ae5e838c1da48e76b1004786a0dafefb0097fe3a73e4652c13ed1b011c051a712017f10b43ffc96b2fa133809715577b65fa4ca30cbdc191b  rmtfs.tgz
+1aaccbad6fab2f7f13bcfb107c393d4511ede3054a1d6cc478d90d64105775a8ec6568be5ed8b6eadffc5a8d35b21ef806287de3bcc16c353eeeea7de720b71d  support-uio.patch"
