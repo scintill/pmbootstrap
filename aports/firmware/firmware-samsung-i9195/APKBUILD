@@ -1,6 +1,6 @@
 pkgname=firmware-samsung-i9195
+# XDA post explains the meaning of the firmware version, which I've translated into pkgver
 pkgver=201707.1
-# see notes in XDA post below about the meaning of the firmware version, which I've translated into pkgver
 _ver=I9195XXUCQG1
 pkgrel=0
 pkgdesc="Samsung Galaxy S 4 Mini firmware"
@@ -8,7 +8,6 @@ subpackages="$pkgname-modem"
 url="https://forum.xda-developers.com/galaxy-s4-mini/general/modem-samsung-galaxy-s4-mini-gt-i9195-t3390780"
 arch="noarch"
 license="proprietary"
-# build system wants to strip binaries, so stop that, and thinks they are wrong arch, so ignore that
 options="!strip !archcheck"
 makedepends="p7zip"
 

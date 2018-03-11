@@ -1,5 +1,4 @@
 # Based on https://git.alpinelinux.org/cgit/aports/tree/testing/ofono/APKBUILD?id=014ae282b4a9152a5b64451f2815f34fcb53507c
-# Thanks to upstream maintainer, Francesco Colista <fcolista@alpinelinux.org>
 pkgname=ofono
 _upstreamver=1.21
 pkgver=1.21_p20180307
