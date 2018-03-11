@@ -1,15 +1,15 @@
 pkgname=libqipcrtr4msmipc
-pkgver=0.1_git20180304
+pkgver=0.1
 pkgrel=0
 pkgdesc="LD_PRELOADable library to emulate AF_QIPCRTR socket on devices with only AF_MSM_IPC"
 url="https://github.com/scintill/libqipcrtr4msmipc"
 arch="all"
 license="GPL-3.0-or-later"
+_tag="v${pkgver}"
 makedepends="msmipc-dev"
-_commit="b931c24aec90e135c40c270375afedefe3ffd170"
-source="src.tgz::https://github.com/scintill/libqipcrtr4msmipc/archive/"$_commit".tar.gz"
+source="${_tag}_${pkgrel}.tgz::https://github.com/scintill/libqipcrtr4msmipc/archive/${_tag}.tar.gz"
 options="!check"
-builddir="$srcdir/libqipcrtr4msmipc-$_commit"
+builddir="$srcdir/libqipcrtr4msmipc-$pkgver"
 
 build() {
 	cd "$builddir"
@@ -20,4 +20,4 @@ package() {
 	install -Dm644 "$builddir"/libqipcrtr4msmipc.so "$pkgdir"/usr/lib/preload/libqipcrtr4msmipc.so
 }
 
-sha512sums="f13898eb359f908adebfe3a68a135906ac37e3a739d0bb37703a9cd4fe50dc45e0f1b5dd839ec4b51c7cdb5a69839ed2fd2c6031895436f242db578ddf12b0d5  src.tgz"
+sha512sums="5fd22a64d1f5dc743de2d485e3ec5c264abed4af4b63204f73a750847c15c2f91c3d0cf350bb341b61650ecb43e103475f81d77ad7b6ebb43751dcda3abb22d7  v0.1_0.tgz"
