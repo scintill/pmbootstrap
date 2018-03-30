@@ -1,0 +1,38 @@
+pkgname=xpwn
+pkgver=0.0
+pkgrel=0
+pkgdesc="A cross-platform custom NOR firmware loader and custom IPSW generator for the iPhone"
+url="https://github.com/planetbeing/xpwn"
+arch="all"
+license="GPL-3.0-only"
+depends=""
+makedepends="cmake libusb-compat-dev zlib-dev openssl-dev bzip2-dev libpng-dev"
+subpackages="libxpwn-dev:lib_dev"
+_commit="ac362d4ffe4d0489a26144a1483ebf3b431da899"
+source="$pkgname-$_commit.tar.gz::https://github.com/planetbeing/xpwn/archive/$_commit.tar.gz"
+options="!check"
+
+builddir="$srcdir"/xpwn-$_commit
+build() {
+	cd "$builddir"
+	cmake .
+	make
+}
+
+package() {
+	# empty
+	mkdir -p "$pkgdir"
+}
+
+lib_dev() {
+	mkdir -p "$subpkgdir/usr/lib"
+	/bin/echo -e \
+		create "$subpkgdir/usr/lib/libxpwn.a"\\n\
+		addlib "$builddir/common/libcommon.a"\\n\
+		addlib "$builddir/ipsw-patch/libxpwn.a"\\n\
+		save\\n\
+		end\\n\
+	| ar -M
+}
+
+sha512sums="a66674da3473fad63bb92507ad559a63ce891d31f04fcc84a7ed2e625bbf566cd4537ebc92941d32e7560fabd99de42b12c67ddca968179fe656ed03fcac68bb  xpwn-ac362d4ffe4d0489a26144a1483ebf3b431da899.tar.gz"

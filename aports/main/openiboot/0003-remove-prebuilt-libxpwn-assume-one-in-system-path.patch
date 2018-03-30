@@ -1,0 +1,77 @@
+From 1423357df74cc372c990491edababda5cb07c42f Mon Sep 17 00:00:00 2001
+From: Joey Hewitt <joey@joeyhewitt.com>
+Date: Fri, 30 Mar 2018 16:00:56 -0600
+Subject: [PATCH 3/4] remove prebuilt libxpwn, assume one in system path
+
+---
+ mk8900image/Makefile            |  12 ++----------
+ mk8900image/SConscript          |  12 +-----------
+ mk8900image/mac-x86/libcommon.a | Bin 16560 -> 0 bytes
+ mk8900image/mac-x86/libxpwn.a   | Bin 118128 -> 0 bytes
+ mk8900image/x86/libcommon.a     | Bin 5972 -> 0 bytes
+ mk8900image/x86/libxpwn.a       | Bin 75532 -> 0 bytes
+ mk8900image/x86_64/libcommon.a  | Bin 17340 -> 0 bytes
+ mk8900image/x86_64/libxpwn.a    | Bin 136090 -> 0 bytes
+ 8 files changed, 3 insertions(+), 21 deletions(-)
+ delete mode 100644 mk8900image/mac-x86/libcommon.a
+ delete mode 100644 mk8900image/mac-x86/libxpwn.a
+ delete mode 100644 mk8900image/x86/libcommon.a
+ delete mode 100644 mk8900image/x86/libxpwn.a
+ delete mode 100644 mk8900image/x86_64/libcommon.a
+ delete mode 100644 mk8900image/x86_64/libxpwn.a
+
+diff --git a/mk8900image/Makefile b/mk8900image/Makefile
+index ad2bacd..bf3ec8f 100644
+--- a/mk8900image/Makefile
++++ b/mk8900image/Makefile
+@@ -3,21 +3,13 @@ LIBRARIES=-L/usr/lib -lm -ldl -lpng -lcrypto -lz
+ CFLAGS +=
+ UNAME := $(shell uname -s)
+ 
+-ifeq ($(UNAME),Darwin)
+-	LIBXPWN=x86-osx/libxpwn.a x86-osx/libcommon.a
+-else
+-	ifeq ($(ARCH), x86_64)
+-		LIBXPWN=x86_64/libxpwn.a x86_64/libcommon.a
+-	else
+-		LIBXPWN=x86/libxpwn.a x86/libcommon.a
+-	endif
+-endif
++LIBXPWN=libxpwn.a
+ 
+ %.o:	%.c
+ 	@echo "Compiling $@"
+ 	@$(CC) $(CFLAGS) -c $< -o $@
+ 
+-mk8900image:	$(MKIMAGEOBJS) $(LIBXPWN)
++mk8900image:	$(MKIMAGEOBJS)
+ 	@echo "Building $@"
+ 	@$(CC) $(CFLAGS) $(MKIMAGEOBJS) $(LIBXPWN) $(LIBRARIES) -o $@
+ 
+diff --git a/mk8900image/SConscript b/mk8900image/SConscript
+index 0db5375..ed784ee 100644
+--- a/mk8900image/SConscript
++++ b/mk8900image/SConscript
+@@ -2,17 +2,7 @@ Import("*")
+ 
+ import platform
+ 
+-libs = []
+-if platform.system() == 'Linux':
+-	if platform.machine() == 'x86_64':
+-		libs += ["x86_64/libxpwn.a", "x86_64/libcommon.a"]
+-	else:
+-		libs += ["x86/libxpwn.a", "x86/libcommon.a"]
+-
+-if platform.system() == 'Darwin':
+-	libs += ["mac-x86/libxpwn.a", "mac-x86/libcommon.a"]
+-
+-mk8900image = henv.Program('mk8900image', ['mk8900image.c'] + libs, LIBPATH='/usr/X11/lib', LIBS=['m', 'dl', 'png', 'crypto', 'z'])
++mk8900image = henv.Program('mk8900image', ['mk8900image.c'], LIBPATH='/usr/X11/lib', LIBS=['m', 'dl', 'xpwn', 'png', 'crypto', 'z'])
+ 
+ def generate_actions(source, target, env, for_sig=False, **kw):
+ 	Depends(target, mk8900image)
+
+-- 
+2.7.4
+

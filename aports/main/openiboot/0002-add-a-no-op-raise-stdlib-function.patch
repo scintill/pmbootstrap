@@ -1,0 +1,48 @@
+From f97d39a0b00406c0067e05d7f22963ecdf30936d Mon Sep 17 00:00:00 2001
+From: Joey Hewitt <joey@joeyhewitt.com>
+Date: Fri, 30 Mar 2018 15:58:57 -0600
+Subject: [PATCH 2/4] add a no-op raise() (stdlib) function
+
+---
+ SConstruct     | 1 +
+ nostdlib.c     | 3 +++
+ plat-a4/cdma.c | 1 -
+ 3 files changed, 4 insertions(+), 1 deletion(-)
+ create mode 100644 nostdlib.c
+
+diff --git a/SConstruct b/SConstruct
+index b814311..0cd2f06 100644
+--- a/SConstruct
++++ b/SConstruct
+@@ -60,6 +60,7 @@ base_src = env.Localize([
+ 	'tasks.c',
+ 	'util.c',
+ 	'aes_wrap.c',
++	'nostdlib.c',
+ 	])
+ Export('base_src')
+ 
+diff --git a/nostdlib.c b/nostdlib.c
+new file mode 100644
+index 0000000..2110bd3
+--- /dev/null
++++ b/nostdlib.c
+@@ -0,0 +1,3 @@
++int raise(int signal) {
++	return 1;
++}
+diff --git a/plat-a4/cdma.c b/plat-a4/cdma.c
+index 146ee77..82c5457 100644
+--- a/plat-a4/cdma.c
++++ b/plat-a4/cdma.c
+@@ -1,7 +1,6 @@
+ #include "openiboot.h"
+ #include "arm/arm.h"
+ #include "util.h"
+-#include "malloc.h"
+ #include "hardware/dma.h"
+ #include "cdma.h"
+ #include "clock.h"
+-- 
+2.7.4
+

@@ -1,14 +1,14 @@
 _hash="c5cee8cc9e9b13784272550ab0938175cec1cdb5"
 pkgname=openiboot
 pkgver=0.3
-pkgrel=0
+pkgrel=1
 pkgdesc="Open bootloader for Apple devices"
 url="https://github.com/iDroid-Project/openiBoot"
 arch="armhf"
 license="GPL3"
 depends=""
-makedepends="texinfo scons openssl-dev libpng-dev curl-dev libusb-dev readline-dev musl-dev"
-subpackages=""
+makedepends="texinfo scons openssl-dev libpng-dev curl-dev libusb-dev readline-dev musl-dev python linux-headers libxpwn-dev"
+subpackages="${pkgname}-ipodtouch1g ${pkgname}-ipad1g"
 source="
     $pkgname.tar.gz::https://github.com/iDroid-Project/openiBoot/archive/${_hash}.tar.gz
     gnu-inline.patch
@@ -16,19 +16,38 @@ source="
     disable-werror.patch
     gcc-inline2.patch
     gcc-stdlib.patch
+    0001-fix-linking.patch
+    0002-add-a-no-op-raise-stdlib-function.patch
+    0003-remove-prebuilt-libxpwn-assume-one-in-system-path.patch
+    0004-disable-O2-it-makes-the-build-not-boot-on-iPad.patch
 "
-options="!check"
+options="!check !strip !archcheck"
+
+prepare() {
+    default_prepare
+    # remove prebuilts, just to be sure they aren't part of the build
+    find -name '*.a' | xargs rm
+}
 
 builddir="$srcdir"/openiBoot-${_hash}
 build() {
     cd "$builddir"
 
-    CROSS=$CROSS_COMPILE \
-    scons iPodTouch1G
+    CROSS= \
+    scons iPodTouch1G iPad1G
+}
+
+ipodtouch1g() {
+    install -Dm644 "$builddir"/ipt_1g_openiboot.img3 "$subpkgdir"/boot/openiboot-ipodtouch1g.img3
+}
+
+ipad1g() {
+    install -Dm644 "$builddir"/ipad_1g_openiboot.bin "$subpkgdir"/boot/openiboot-ipad1g.bin
 }
 
 package() {
-    return 0
+    # empty
+    mkdir -p "$pkgdir"
 }
 
 sha512sums="dbd35f0dc158757c174f68f15fe779397aadc6b238e0385ebd85ea16bec361fdb7b89dc124555da56a158c8b8fb7468c2536d7ccd89f8cb619b86ab3b957211e  openiboot.tar.gz
@@ -36,4 +55,8 @@ sha512sums="dbd35f0dc158757c174f68f15fe779397aadc6b238e0385ebd85ea16bec361fdb7b8
 061cf38d6ef841e5657ff9536aab0bc714617bfee4a4ce08d108b838ad6304160d1581c311332d281a506308eccfb9a75dc1886ea819d4345db017d14b365453  disable-thumb.patch
 4d7ab7e6a5336de044f1811a6de0e33d45b71bbf00616ca9767f7c753b657d8fe9761aebc05619b03eaab9f42bb60439c2d163b81900c1e7fee69cae027bb33d  disable-werror.patch
 6cdb1745f33b7d20afb7205dacedfbdf4111fcde5e6d6f1b7e30495f72405f248be8a9d1361c7f4e513461254521857004e94db7e50ca2e30e25e33748087633  gcc-inline2.patch
-7a25e4ee10744041d1f96467f9a6e141998c821ad4a5a569866632148597d0fd020f4536849be559b0078b980bd14e41fce2534a521a23bc9e068589a4c5f29f  gcc-stdlib.patch"
+7a25e4ee10744041d1f96467f9a6e141998c821ad4a5a569866632148597d0fd020f4536849be559b0078b980bd14e41fce2534a521a23bc9e068589a4c5f29f  gcc-stdlib.patch
+ec92c74b7ed87bb764547e0d107afd8009ee73bac6e03aaacfe1318610904bd993a2f5205efbfc40ba232a789df2a6971d1128b9003f5d3546f55fcb36347fa3  0001-fix-linking.patch
+1d682c2f0e46a14a6cc9ff8ff7b96e563747fc321fc0720d18947f66c477cadaed64df04233f62f3d9839c2fdacc3f6b191dd37844d2983606ca1ef031007ac9  0002-add-a-no-op-raise-stdlib-function.patch
+4a805e971e759faa6d976ff5431fc4610b8edddf028e0759d4ae74fafd99bc33b8b971d2ec63219424eafb1d6f45695679dc3200040e54a6ea19a2f059a19110  0003-remove-prebuilt-libxpwn-assume-one-in-system-path.patch
+382b2a6167784afb1116028fb22faf5fb4804dc464bef3cffa0ba9443f6089f0fa99489c71b8467c6efa8826c2cc35fa824dbec308ae09a42cad559defebe26a  0004-disable-O2-it-makes-the-build-not-boot-on-iPad.patch"

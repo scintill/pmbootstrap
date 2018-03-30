@@ -1,0 +1,40 @@
+From ffffcbac04f92a2a8345f7547afec0625081a18b Mon Sep 17 00:00:00 2001
+From: Joey Hewitt <joey@joeyhewitt.com>
+Date: Fri, 30 Mar 2018 15:56:05 -0600
+Subject: [PATCH 1/4] fix linking
+
+Use a linkscript to get .text at 0. Also add -static since it was
+trying to create an .interp section.
+---
+ linkscript.x                    | 5 +++++
+ scons/ARMEnvironment.SConscript | 2 +-
+ 2 files changed, 6 insertions(+), 1 deletion(-)
+ create mode 100644 linkscript.x
+
+diff --git a/linkscript.x b/linkscript.x
+new file mode 100644
+index 0000000..b66170b
+--- /dev/null
++++ b/linkscript.x
+@@ -0,0 +1,5 @@
++SECTIONS {
++. = 0,
++.text : { *(.text) },
++}
++INSERT AFTER .interp;
+diff --git a/scons/ARMEnvironment.SConscript b/scons/ARMEnvironment.SConscript
+index 79c92ea..02677c7 100644
+--- a/scons/ARMEnvironment.SConscript
++++ b/scons/ARMEnvironment.SConscript
+@@ -10,7 +10,7 @@ def ARMEnvironment(*a, **kw):
+ 	env.Append(CPPPATH = ['#includes'])
+ 	env.Append(CPPFLAGS = plat_flags+['-nostdlib'])
+ 	env.Append(ASPPFLAGS = ['-xassembler-with-cpp'])
+-	env.Append(LINKFLAGS = plat_flags+['-nostdlib', '-Ttext=0x0'])
++	env.Append(LINKFLAGS = plat_flags+['-nostdlib', '-Tlinkscript.x', '-Ttext=0x0', '-static'])
+ 	env.Append(LIBS = ['gcc'])
+ 
+ 	env['PROGSUFFIX'] = ''
+-- 
+2.7.4
+
