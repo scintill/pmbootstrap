@@ -1,5 +1,5 @@
 """
-Copyright 2017 Oliver Smith
+Copyright 2018 Oliver Smith
 
 This file is part of pmbootstrap.
 
@@ -94,8 +94,7 @@ def check_min_version(args, suffix="native"):
     # Compare
     version_installed = installed(args, suffix)["apk-tools"]["version"]
     version_min = pmb.config.apk_tools_static_min_version
-    if pmb.parse.version.compare(version_installed,
-                                 version_min) == -1:
+    if pmb.parse.version.compare(version_installed, version_min) == -1:
         raise RuntimeError("You have an outdated version of the 'apk' package"
                            " manager installed (your version: " + version_installed +
                            ", expected at least: " + version_min + "). Delete"
@@ -124,7 +123,7 @@ def install_is_necessary(args, build, arch, package, packages_installed):
         return True
 
     # Make sure, that we really have a binary package
-    data_repo = pmb.parse.apkindex.read_any_index(args, package, arch)
+    data_repo = pmb.parse.apkindex.package(args, package, arch, False)
     if not data_repo:
         logging.warning("WARNING: Internal error in pmbootstrap," +
                         " package '" + package + "' for " + arch +
@@ -145,7 +144,8 @@ def install_is_necessary(args, build, arch, package, packages_installed):
         logging.info("WARNING: " + arch + " package '" + package +
                      "' installed version " + data_installed["version"] +
                      " is newer, than the version in the repositories: " +
-                     data_repo["version"])
+                     data_repo["version"] +
+                     " See also: <https://postmarketos.org/warning-repo>")
         return False
 
     # b) Repo newer
@@ -170,7 +170,7 @@ def replace_aports_packages_with_path(args, packages, suffix, arch):
         aport = pmb.build.find_aport(args, package, False)
         if aport:
             apkbuild = pmb.parse.apkbuild(args, aport + "/APKBUILD")
-            apk_path = ("/home/user/packages/user/" + arch + "/" +
+            apk_path = ("/mnt/pmbootstrap-packages/" + arch + "/" +
                         package + "-" + apkbuild["pkgver"] + "-r" +
                         apkbuild["pkgrel"] + ".apk")
             if os.path.exists(args.work + "/chroot_" + suffix + apk_path):
@@ -192,10 +192,9 @@ def install(args, packages, suffix="native", build=True):
 
     # Add depends to packages
     arch = pmb.parse.arch.from_chroot_suffix(args, suffix)
-    packages_with_depends = pmb.parse.depends.recurse(args, packages, arch,
-                                                      strict=True)
+    packages_with_depends = pmb.parse.depends.recurse(args, packages, suffix)
 
-    # Filter out up-to-date packages
+    # Filter outdated packages (build them if required)
     packages_installed = installed(args, suffix)
     packages_todo = []
     for package in packages_with_depends:
@@ -218,25 +217,32 @@ def install(args, packages, suffix="native", build=True):
             message += " " + pkgname
     logging.info(message)
 
-    # Install/update everything
+    # Local packages: Using the path instead of pkgname makes apk update
+    # packages of the same version if the build date is different
     packages_todo = replace_aports_packages_with_path(args, packages_todo,
                                                       suffix, arch)
-    pmb.chroot.root(args, ["apk", "--no-progress", "add", "-u"] + packages_todo,
-                    suffix)
+
+    # Use a virtual package to mark only the explicitly requested packages as
+    # explicitly installed, not their dependencies or specific paths (#1212)
+    commands = [["add"] + packages]
+    if packages != packages_todo:
+        commands = [["add", "-u", "--virtual", ".pmbootstrap"] + packages_todo,
+                    ["add"] + packages,
+                    ["del", ".pmbootstrap"]]
+    for command in commands:
+        pmb.chroot.root(args, ["apk", "--no-progress"] + command, suffix)
 
 
-def upgrade(args, suffix="native", update_index=True):
+def upgrade(args, suffix="native"):
     """
     Upgrade all packages installed in a chroot
     """
-    # Prepare apk and update index
-    check_min_version(args, suffix)
-    pmb.chroot.init(args, suffix)
-    if update_index:
-        pmb.chroot.root(args, ["apk", "update"], suffix)
+    # Update APKINDEX files
+    arch = pmb.parse.arch.from_chroot_suffix(args, suffix)
+    pmb.helpers.repo.update(args, arch)
 
     # Rebuild and upgrade out-of-date packages
-    packages = installed(args, suffix).keys()
+    packages = list(installed(args, suffix).keys())
     install(args, packages, suffix)
 
 
@@ -256,6 +262,4 @@ def installed(args, suffix="native"):
               }
     """
     path = args.work + "/chroot_" + suffix + "/lib/apk/db/installed"
-    if not os.path.exists(path):
-        return {}
-    return pmb.parse.apkindex.parse(args, path)
+    return pmb.parse.apkindex.parse(args, path, False)

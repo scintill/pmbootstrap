@@ -104,3 +104,9 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# Visual Studio Code
+.vscode/
+
+# Pytest
+.pytest_cache

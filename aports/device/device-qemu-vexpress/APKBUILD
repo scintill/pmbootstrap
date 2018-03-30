@@ -1,23 +1,20 @@
 pkgname=device-qemu-vexpress
 pkgver=1
-pkgrel=8
+pkgrel=19
 pkgdesc="Simulated device in qemu with vexpress soc"
 url="https://github.com/postmarketOS"
 arch="noarch"
 license="MIT"
-depends="linux-postmarketos"
+# NOTE: 'pmbootstrap init' allows you to choose the mesa-dri-* package
+depends="postmarketos-base linux-postmarketos-lts"
 makedepends=""
 subpackages=""
 source="deviceinfo"
 options="!check"
-
-build() {
-	return 0
-}
 
 package() {
 	install -D -m644 "$srcdir"/deviceinfo \
 		"$pkgdir"/etc/deviceinfo
 }
 
-sha512sums="a18ab789c19d8802be6a9e9c842f4c304f267bd78f46b096b4ba6609430d1544e0a9eca9bc22db67a0728efae3aad6c2def9f7e64157d31aeb31b4bb839076d5  deviceinfo"
+sha512sums="9445b9862b30bd25ce7bc165fe03d45687eb348496cf47fdb5bb542a74689aeaa5a43dfb1accfc6e0a11b37de37cfcfbfdccca1e4b5118ddfedb091c4099c3cb  deviceinfo"

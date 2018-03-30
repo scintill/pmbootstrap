@@ -1,5 +1,5 @@
 """
-Copyright 2017 Oliver Smith
+Copyright 2018 Oliver Smith
 
 This file is part of pmbootstrap.
 
@@ -28,6 +28,11 @@ def deviceinfo(args, device=None):
     if not device:
         device = args.device
 
+    if not os.path.exists(args.aports):
+        logging.fatal("Aports directory is missing")
+        logging.fatal("Please provide a path to the aports directory using the -p flag")
+        raise RuntimeError("Aports directory missing")
+
     aport = args.aports + "/device/device-" + device
     if not os.path.exists(aport) or not os.path.exists(aport + "/deviceinfo"):
         logging.fatal("You will need to create a device-specific package")
@@ -54,5 +59,18 @@ def deviceinfo(args, device=None):
     for key in pmb.config.deviceinfo_attributes:
         if key not in ret:
             ret[key] = ""
+
+    # Sanity check: "flash_methods" is legacy
+    if "flash_methods" in ret:
+        raise RuntimeError("deviceinfo_flash_methods has been renamed to"
+                           " deviceinfo_flash_method. Please adjust your"
+                           " deviceinfo file: " + path)
+
+    # Sanity check: "external_disk*" is legacy
+    if "external_disk" in ret or "external_disk_install" in ret:
+        raise RuntimeError("Instead of deviceinfo_external_disk and"
+                           " deviceinfo_external_disk_install, please use the"
+                           " new variable deviceinfo_external_storage in your"
+                           " deviceinfo file: " + path)
 
     return ret

@@ -1,5 +1,5 @@
 """
-Copyright 2017 Oliver Smith
+Copyright 2018 Oliver Smith
 
 This file is part of pmbootstrap.
 
@@ -25,8 +25,10 @@ def alpine_native():
     ret = ""
 
     mapping = {
+        "i686": "x86",
         "x86_64": "x86_64",
-        "aarch64": "aarch64"
+        "aarch64": "aarch64",
+        "armv7l": "armhf"
     }
     if machine in mapping:
         return mapping[machine]
@@ -41,7 +43,7 @@ def from_chroot_suffix(args, suffix):
     if suffix == "rootfs_" + args.device:
         return args.deviceinfo["arch"]
     if suffix.startswith("buildroot_"):
-        return suffix.split("_", 2)[1]
+        return suffix.split("_", 1)[1]
 
     raise ValueError("Invalid chroot suffix: " + suffix +
                      " (wrong device chosen in 'init' step?)")
@@ -54,7 +56,8 @@ def alpine_to_debian(arch):
     """
 
     mapping = {
-        "x86_64": "amd64",
+        "x86": "i386",
+        "x86_64": "x86_64",
         "armhf": "arm",
         "aarch64": "aarch64",
     }
@@ -158,3 +161,16 @@ def qemu_to_pmos_device(arch):
 
     raise ValueError("Can not map QEMU value '" + arch + "'"
                      " to the right postmarketOS device")
+
+
+def qemu_check_device(device, arch):
+    """
+    Check whether a device has a specific architecture.
+
+    Examples:
+        qemu_check_device("qemu-amd64", "x86_64") is True
+        qemu_check_device("qemu-vexpress", "armel") is True
+        qemu_check_device("qemu-vexpress", "aarch64") is False
+    """
+    arch_qemu = uname_to_qemu(arch)
+    return device == qemu_to_pmos_device(arch_qemu)

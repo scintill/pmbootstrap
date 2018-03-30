@@ -1,5 +1,5 @@
 """
-Copyright 2017 Oliver Smith
+Copyright 2018 Oliver Smith
 
 This file is part of pmbootstrap.
 
@@ -27,7 +27,7 @@ import pmb.chroot
 
 
 def init(args):
-    if not glob.glob("/dev/loop*"):
+    if not os.path.isdir("/sys/module/loop"):
         pmb.helpers.run.root(args, ["modprobe", "loop"])
     loopdevices = [loopdev for loopdev in glob.glob("/dev/loop*") if not os.path.isdir(loopdev)]
     for loopdev in loopdevices:

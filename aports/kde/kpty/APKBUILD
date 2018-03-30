@@ -1,32 +1,35 @@
+# Contributor: Bart Ribbers <bribbers@disroot.org>
+# Maintainer: Bart Ribbers <bribbers@disroot.org>
 pkgname=kpty
-pkgver=5.37.0
-pkgrel=1
+pkgver=5.44.0
+pkgrel=0
 pkgdesc='Pty abstraction'
 arch="all"
 url='https://community.kde.org/Frameworks'
-license="LGPL"
-depends="kcoreaddons ki18n"
-makedepends="extra-cmake-modules python qt5-qttools-dev"
+license="LGPL-2.1"
+depends=""
+depends_dev="kcoreaddons-dev ki18n-dev"
+makedepends="$depends_dev extra-cmake-modules qt5-qttools-dev doxygen"
 source="https://download.kde.org/stable/frameworks/${pkgver%.*}/${pkgname}-${pkgver}.tar.xz"
 subpackages="$pkgname-dev $pkgname-doc $pkgname-lang"
-
-prepare() {
-	mkdir -p $srcdir/build
-}
+options="!check" # Not sure: "Can't open a pseudo teletype"
 
 build() {
-	cd $srcdir/build
-	cmake "$srcdir"/${pkgname}-${pkgver} \
+	cmake \
 		-DCMAKE_BUILD_TYPE=Release \
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DKDE_INSTALL_LIBDIR=lib \
-		-DBUILD_TESTING=OFF \
 		-DBUILD_QCH=ON
 	make
 }
 
+check() {
+	cd "$builddir"
+	CTEST_OUTPUT_ON_FAILURE=TRUE ctest
+}
+
 package() {
-	cd $srcdir/build
+	cd "$builddir"
 	make DESTDIR="${pkgdir}" install
 }
-sha512sums="8bf1d12aafb319f952c7001fd59921d15cf248f0d09daa5b00990441a1959d873e1ce6aadb0cb175637290777381f6a4b8326637fbaae46db4030210072a1ec8  kpty-5.37.0.tar.xz"
+sha512sums="b5fdfb7051a44db18652244846a4db706c60818b171724a87630e191b17a0313bfca7556608a150aa6d36476279a31533b442fb9e33e5b3f6be3681e1af6f103  kpty-5.44.0.tar.xz"

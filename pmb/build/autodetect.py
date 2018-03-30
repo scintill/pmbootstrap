@@ -1,5 +1,5 @@
 """
-Copyright 2017 Oliver Smith
+Copyright 2018 Oliver Smith
 
 This file is part of pmbootstrap.
 
@@ -17,53 +17,85 @@ You should have received a copy of the GNU General Public License
 along with pmbootstrap.  If not, see <http://www.gnu.org/licenses/>.
 """
 import fnmatch
+import logging
+import os
+
 import pmb.config
 import pmb.chroot.apk
 import pmb.parse.arch
 
 
-def carch(args, apkbuild, carch):
-    if "noarch" in apkbuild["arch"]:
+def arch_from_deviceinfo(args, pkgname, aport):
+    """
+    The device- packages are noarch packages. But it only makes sense to build
+    them for the device's architecture, which is specified in the deviceinfo
+    file.
+
+    :returns: None (no deviceinfo file)
+              arch from the deviceinfo (e.g. "armhf")
+    """
+    # Require a deviceinfo file in the aport
+    if not pkgname.startswith("device-"):
+        return
+    deviceinfo = aport + "/deviceinfo"
+    if not os.path.exists(deviceinfo):
+        return
+
+    # Return its arch
+    device = pkgname.split("-", 1)[1]
+    arch = pmb.parse.deviceinfo(args, device)["arch"]
+    logging.verbose(pkgname + ": arch from deviceinfo: " + arch)
+    return arch
+
+
+def arch(args, pkgname):
+    """
+    Find a good default in case the user did not specify for which architecture
+    a package should be built.
+
+    :returns: arch string like "x86_64" or "armhf". Preferred order, depending
+              on what is supported by the APKBUILD:
+              * native arch
+              * device arch
+              * first arch in the APKBUILD
+    """
+    aport = pmb.build.find_aport(args, pkgname)
+    ret = arch_from_deviceinfo(args, pkgname, aport)
+    if ret:
+        return ret
+
+    apkbuild = pmb.parse.apkbuild(args, aport + "/APKBUILD")
+    arches = apkbuild["arch"]
+    if "noarch" in arches or "all" in arches or args.arch_native in arches:
         return args.arch_native
-    if carch:
-        if "all" not in apkbuild["arch"] and carch not in apkbuild["arch"]:
-            raise RuntimeError("Architecture '" + carch + "' is not supported"
-                               " for this package. Please add it to the"
-                               " 'arch=' line inside the APKBUILD and try"
-                               " again: " + apkbuild["pkgname"])
-        return carch
-    if ("all" in apkbuild["arch"] or
-            args.arch_native in apkbuild["arch"]):
-        return args.arch_native
+
+    arch_device = args.deviceinfo["arch"]
+    if arch_device in arches:
+        return arch_device
+
     return apkbuild["arch"][0]
 
 
-def suffix(args, apkbuild, carch):
-    if carch == args.arch_native:
-        return "native"
-    if "noarch" in apkbuild["arch"]:
+def suffix(args, apkbuild, arch):
+    if arch == args.arch_native:
         return "native"
 
     pkgname = apkbuild["pkgname"]
-    if pkgname.endswith("-repack"):
-        return "native"
     if args.cross:
         for pattern in pmb.config.build_cross_native:
             if fnmatch.fnmatch(pkgname, pattern):
                 return "native"
 
-    return "buildroot_" + carch
+    return "buildroot_" + arch
 
 
-def crosscompile(args, apkbuild, carch, suffix):
+def crosscompile(args, apkbuild, arch, suffix):
     """
         :returns: None, "native" or "distcc"
     """
     if not args.cross:
         return None
-    if apkbuild["pkgname"].endswith("-repack"):
-        return None
-    if not pmb.parse.arch.cpu_emulation_required(args, carch):
+    if not pmb.parse.arch.cpu_emulation_required(args, arch):
         return None
     if suffix == "native":
         return "native"

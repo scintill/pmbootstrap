@@ -1,0 +1,28 @@
+# Contributor: Olgierd "moondeck" Nowakowski <olgierd@novakovsky.eu>
+# Maintainer: Olgierd "moondeck" Nowakowski <olgierd@novakovsky.eu>
+
+pkgname="postmarketos-artwork-wallpapers"
+pkgver=1
+pkgrel=1
+pkgdesc="Wallpapers for postmarketOS"
+url="https://postmarketos.org/"
+arch="noarch"
+license="CC-BY-SA"
+_hash="6f7bc74169b782a752fed46bef21f1f6395cafea"
+source="postmarketos-artwork-$_hash.tar.gz::https://github.com/postmarketOS/artwork/archive/${_hash}.tar.gz"
+subpackages="$pkgname-extra"
+options="!check"
+
+package() {
+	mkdir -p "$pkgdir"/usr/share/wallpapers/
+	cp -r "$srcdir"/artwork-$_hash/wallpapers/logo/* \
+		"$pkgdir"/usr/share/wallpapers/
+}
+
+extra() {
+	mkdir -p "$subpkgdir"/usr/share/wallpapers/
+	cp "$srcdir"/artwork-$_hash/wallpapers/extra/* \
+		"$subpkgdir"/usr/share/wallpapers/
+}
+
+sha512sums="6f2a31f2720d98918b395adb2e93d829dec0e07f4b74a3b01bfaca9000cd379b9eeb85d768480efda8f4262c8c2c1219b115391d276760666754f3b7086f239b  postmarketos-artwork-6f7bc74169b782a752fed46bef21f1f6395cafea.tar.gz"

@@ -1,0 +1,22 @@
+# Reference: <https://postmarketos.org/devicepkg>
+pkgname="device-sony-scorpion"
+pkgdesc="Xperia Z3 Tablet Compact"
+pkgver=0.1
+pkgrel=2
+url="https://postmarketos.org"
+license="MIT"
+arch="noarch"
+options="!check"
+depends="postmarketos-base linux-sony-scorpion mkbootimg mesa-dri-swrast msm-fb-refresher"
+makedepends="devicepkg-dev"
+source="deviceinfo"
+
+build() {
+	devicepkg_build $startdir $pkgname
+}
+
+package() {
+	devicepkg_package $startdir $pkgname
+}
+
+sha512sums="3ea4b8b13824b0a921d41d9c7289d4b34d1399aa73361da9e9d878300a0e8badfb1037c555e6b5fa91f14a43ddec44d5573600bb9873a4daec3b8f5a3c8b3475  deviceinfo"

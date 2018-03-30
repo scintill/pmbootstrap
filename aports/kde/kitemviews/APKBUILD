@@ -1,32 +1,35 @@
+# Contributor: Bart Ribbers <bribbers@disroot.org>
+# Maintainer: Bart Ribbers <bribbers@disroot.org>
 pkgname=kitemviews
-pkgver=5.37.0
-pkgrel=1
+pkgver=5.44.0
+pkgrel=0
 pkgdesc='Widget addons for Qt Model/View'
 arch="all"
 url='https://community.kde.org/Frameworks'
-license="LGPL"
-depends="qt5-qtbase"
-makedepends="extra-cmake-modules qt5-qttools-dev clang py3-qt5 doxygen"
+license="LGPL-2.1"
+depends=""
+depends_dev="qt5-qtbase-dev"
+makedepends="extra-cmake-modules qt5-qttools-dev doxygen"
 source="https://download.kde.org/stable/frameworks/${pkgver%.*}/${pkgname}-${pkgver}.tar.xz"
 subpackages="$pkgname-dev $pkgname-doc $pkgname-lang"
-
-prepare() {
-	mkdir -p $srcdir/build
-}
+options="!check" # Fails due to requiring running X11
 
 build() {
-	cd $srcdir/build
-	cmake "$srcdir"/${pkgname}-${pkgver} \
+	cmake \
 		-DCMAKE_BUILD_TYPE=Release \
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DKDE_INSTALL_LIBDIR=lib \
-		-DBUILD_TESTING=OFF \
 		-DBUILD_QCH=ON
 	make
 }
 
+check() {
+	cd "$builddir"
+	CTEST_OUTPUT_ON_FAILURE=TRUE ctest
+}
+
 package() {
-	cd $srcdir/build
+	cd "$builddir"
 	make DESTDIR="${pkgdir}" install
 }
-sha512sums="bc9333da6bc5573978ff1f7b558de789a3b63d88ed8c3c1b5d26706b00d808c90e0ef878b309d0f4f6ad538954e21f455fe6290d246a546838e2130053508333  kitemviews-5.37.0.tar.xz"
+sha512sums="c43c5507e6e4ca465f816349261b90e9110aeb2ba5cc88c547cd081465c6f0ebb15377382609da9e312766734100d6d05b4d23e70e8bab7227a62d42cf69b93d  kitemviews-5.44.0.tar.xz"

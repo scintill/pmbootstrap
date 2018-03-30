@@ -1,5 +1,5 @@
 """
-Copyright 2017 Oliver Smith
+Copyright 2018 Oliver Smith
 
 This file is part of pmbootstrap.
 
@@ -16,8 +16,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with pmbootstrap.  If not, see <http://www.gnu.org/licenses/>.
 """
-import os
 import logging
+import os
+import time
 import pmb.chroot
 import pmb.config
 import pmb.install.losetup
@@ -29,13 +30,21 @@ def partitions_mount(args):
     """
     prefix = args.sdcard
     if not args.sdcard:
-        img_path = "/home/user/rootfs/" + args.device + ".img"
+        img_path = "/home/pmos/rootfs/" + args.device + ".img"
         prefix = pmb.install.losetup.device_by_back_file(args, img_path)
 
     partition_prefix = None
-    for symbol in ["p", ""]:
-        if os.path.exists(prefix + symbol + "1"):
-            partition_prefix = symbol
+    tries = 20
+    for i in range(tries):
+        for symbol in ["p", ""]:
+            if os.path.exists(prefix + symbol + "1"):
+                partition_prefix = symbol
+        if partition_prefix is not None:
+            break
+        logging.debug("NOTE: (" + str(i + 1) + "/" + str(tries) + ") failed to find"
+                      " the install partition. Retrying...")
+        time.sleep(0.1)
+
     if partition_prefix is None:
         raise RuntimeError("Unable to find the partition prefix,"
                            " expected the first partition of " +
@@ -51,19 +60,24 @@ def partitions_mount(args):
 def partition(args, size_boot):
     """
     Partition /dev/install and create /dev/install{p1,p2}
-    """
 
-    logging.info("(native) partition /dev/install (boot: " + size_boot +
+    size_boot: size of the boot partition in bytes.
+    """
+    # Convert to MB and print info
+    mb_boot = str(round(size_boot / 1024 / 1024)) + "M"
+    logging.info("(native) partition /dev/install (boot: " + mb_boot +
                  ", root: the rest)")
+
+    # Actual partitioning with 'parted'. Using check=False, because parted
+    # sometimes "fails to inform the kernel". In case it really failed with
+    # partitioning, the follow-up mounting/formatting will not work, so it
+    # will stop there (see #463).
     commands = [
         ["mktable", "msdos"],
-        ["mkpart", "primary", "ext2", "2048s", size_boot],
-        ["mkpart", "primary", size_boot, "100%"],
+        ["mkpart", "primary", "ext2", "2048s", mb_boot],
+        ["mkpart", "primary", mb_boot, "100%"],
         ["set", "1", "boot", "on"]
     ]
     for command in commands:
         pmb.chroot.root(args, ["parted", "-s", "/dev/install"] +
-                        command)
-
-    # Mount new partitions
-    partitions_mount(args)
+                        command, check=False)

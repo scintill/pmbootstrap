@@ -1,32 +1,34 @@
+# Contributor: Bart Ribbers <bribbers@disroot.org>
+# Maintainer: Bart Ribbers <bribbers@disroot.org>
 pkgname=kidletime
-pkgver=5.37.0
-pkgrel=1
+pkgver=5.44.0
+pkgrel=0
 pkgdesc='Monitoring user activity'
 arch="all"
 url='https://community.kde.org/Frameworks'
-license="LGPL"
-depends="qt5-x11extras"
-makedepends="extra-cmake-modules mesa-dev doxygen qt5-qttools-dev qt5-x11extras-dev"
+license="LGPL-2.1"
+depends=""
+depends_dev="qt5-x11extras-dev"
+makedepends="$depends_dev extra-cmake-modules doxygen qt5-qttools-dev"
 source="https://download.kde.org/stable/frameworks/${pkgver%.*}/${pkgname}-${pkgver}.tar.xz"
 subpackages="$pkgname-dev $pkgname-doc"
 
-prepare() {
-	mkdir -p $srcdir/build
-}
-
 build() {
-	cd $srcdir/build
-	cmake "$srcdir"/${pkgname}-${pkgver} \
+	cmake \
 		-DCMAKE_BUILD_TYPE=Release \
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DKDE_INSTALL_LIBDIR=lib \
-		-DBUILD_TESTING=OFF \
 		-DBUILD_QCH=ON
 	make
 }
 
+check() {
+	cd "$builddir"
+	CTEST_OUTPUT_ON_FAILURE=TRUE ctest
+}
+
 package() {
-	cd $srcdir/build
+	cd "$builddir"
 	make DESTDIR="${pkgdir}" install
 }
-sha512sums="444cfc25d162c4390ec0aa49b035bda1e5628972a634eb08c0cc9c48d513676669729470fc91cdf25ed98b9b6dd76b71159659bfecb4cbd61e029ad42398be27  kidletime-5.37.0.tar.xz"
+sha512sums="6416ad41958ab055f2b4177011cb670f623b12c82b8dc549c2db804e60c4d5088f44477eb70e60679923a6b1ce768b44181534dd37330f547085f91fedd65b9a  kidletime-5.44.0.tar.xz"

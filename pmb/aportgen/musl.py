@@ -1,5 +1,5 @@
 """
-Copyright 2017 Oliver Smith
+Copyright 2018 Oliver Smith
 
 This file is part of pmbootstrap.
 
@@ -26,16 +26,19 @@ import pmb.chroot.apk_static
 
 
 def generate(args, pkgname):
-    # Install musl in chroot (so we have the APKINDEX and verified musl apks)
+    # Install musl in chroot to get verified apks
     arch = pkgname.split("-")[1]
-    apkindex = pmb.chroot.apk_static.download(args, "APKINDEX.tar.gz")
     pmb.chroot.apk.install(args, ["musl-dev"], "buildroot_" + arch)
 
     # Parse musl version from APKINDEX
-    package_data = pmb.parse.apkindex.read(args, "musl", apkindex)
+    package_data = pmb.parse.apkindex.package(args, "musl")
     version = package_data["version"]
     pkgver = version.split("-r")[0]
     pkgrel = version.split("-r")[1]
+
+    # Architectures to build this package for
+    arches = list(pmb.config.build_device_architectures)
+    arches.remove(arch)
 
     # Copy the apk files to the distfiles cache
     for subpkgname in ["musl", "musl-dev"]:
@@ -51,7 +54,7 @@ def generate(args, pkgname):
         path_target = (args.work + "/cache_distfiles/" + subpkgname + "-" +
                        version + "-" + arch + ".apk")
         if not os.path.exists(path_target):
-            pmb.helpers.run.user(args, ["cp", path, path_target])
+            pmb.helpers.run.root(args, ["cp", path, path_target])
 
     # Hash the distfiles
     hashes = pmb.chroot.user(args, ["sha512sum",
@@ -66,9 +69,10 @@ def generate(args, pkgname):
         handle.write("# Automatically generated aport, do not edit!\n"
                      "# Generator: pmbootstrap aportgen " + pkgname + "\n"
                      "\n"
-                     "pkgname=" + pkgname + "\n"
-                     "pkgver=" + pkgver + "\n"
+                     "pkgname=\"" + pkgname + "\"\n"
+                     "pkgver=\"" + pkgver + "\"\n"
                      "pkgrel=" + pkgrel + "\n"
+                     "arch=\"" + " ".join(arches) + "\"\n"
                      "subpackages=\"musl-dev-" + arch + ":package_dev\"\n"
                      "\n"
                      "_arch=\"" + arch + "\"\n"
@@ -78,7 +82,6 @@ def generate(args, pkgname):
         static = """
             url="https://musl-libc.org"
             license="MIT"
-            arch="all"
             options="!check !strip"
             pkgdesc="the musl library (lib c) implementation for $_arch"
 

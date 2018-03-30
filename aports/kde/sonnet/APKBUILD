@@ -1,32 +1,35 @@
+# Contributor: Bart Ribbers <bribbers@disroot.org>
+# Maintainer: Bart Ribbers <bribbers@disroot.org>
 pkgname=sonnet
-pkgver=5.37.0
-pkgrel=1
+pkgver=5.44.0
+pkgrel=0
 pkgdesc='Spelling framework for Qt5'
 arch="all"
 url='https://community.kde.org/Frameworks'
-license="LGPL"
-depends="qt5-qtbase"
-makedepends="extra-cmake-modules qt5-qttools-dev doxygen"
+license="LGPL-2.1"
+depends=""
+depends_dev="qt5-qtbase"
+makedepends="$depends_dev extra-cmake-modules qt5-qttools-dev doxygen hunspell-dev"
 source="https://download.kde.org/stable/frameworks/${pkgver%.*}/${pkgname}-${pkgver}.tar.xz"
 subpackages="$pkgname-dev $pkgname-doc $pkgname-lang"
-
-prepare() {
-	mkdir -p $srcdir/build
-}
+options="!check" # Fails due to requiring running X11
 
 build() {
-	cd $srcdir/build
-	cmake "$srcdir"/${pkgname}-${pkgver} \
+	cmake \
 		-DCMAKE_BUILD_TYPE=Release \
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DKDE_INSTALL_LIBDIR=lib \
-		-DBUILD_TESTING=OFF \
 		-DBUILD_QCH=ON
 	make
 }
 
+check() {
+	cd "$builddir"
+	CTEST_OUTPUT_ON_FAILURE=TRUE ctest
+}
+
 package() {
-	cd $srcdir/build
+	cd "$builddir"
 	make DESTDIR="${pkgdir}" install
 }
-sha512sums="bd22671f2c9edff553df80db050393dfb88b14dd6bc869957bfbe70dd30c9ee17e90ac9d88d45e700ffc014708b7703ef8cfacbff6bcdc51ecffa7e45e83aa3d  sonnet-5.37.0.tar.xz"
+sha512sums="a3909673c0949f19d16a2a4b9036f1fd572d5d88990bf1147cb63484a08ae2ca70c479ac5c196b32e8f1b19359ffbabf2394b507dce93a1fc86bb3ae43a73e60  sonnet-5.44.0.tar.xz"

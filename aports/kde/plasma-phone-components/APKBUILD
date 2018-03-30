@@ -1,27 +1,28 @@
 pkgname=plasma-phone-components
-pkgver=682.b79bb13
-pkgrel=2
+pkgver=0_git20180221
+pkgrel=1
+_commit="9222d501fa6b86b93382e0dd1a7c965668960cee"
 pkgdesc="Modules providing phone functionality for Plasma"
 arch="all"
 url="https://community.kde.org/Plasma/Mobile"
 license="GPL3"
-depends="plasma-workspace kpeople telepathy-qt qt5-qtgraphicaleffects"
-makedepends="kpeople telepathy-qt"
+depends="desktop-file-utils qt5-qtgraphicaleffects kactivities qt5-qtquickcontrols2 qt5-qtquickcontrols
+		plasma-pa plasma-nm upower"
+makedepends="extra-cmake-modules kpeople-dev qt5-qtdeclarative-dev kactivities-dev
+			 plasma-framework-dev kservice-dev kdeclarative-dev ki18n-dev kio-dev kcoreaddons-dev
+			 kconfig-dev kbookmarks-dev kwidgetsaddons-dev kcompletion-dev kitemviews-dev
+			 kjobwidgets-dev solid-dev kxmlgui-dev kconfigwidgets-dev kauth-dev kcodecs-dev
+			 kpackage-dev kwindowsystem-dev kdbusaddons-dev knotifications-dev kwayland-dev
+			 telepathy-qt5-dev"
 install="$pkgname.post-install
 		 $pkgname.post-upgrade
 		 $pkgname.post-deinstall"
-source="$pkgname-$pkgver.tar.gz::https://github.com/KDE/$pkgname/archive/master.tar.gz
-		$install"
-
-prepare() {
-	mkdir -p $srcdir/build
-}
+source="$pkgname-$pkgver.tar.gz::https://github.com/kde/$pkgname/archive/$_commit.tar.gz"
+builddir="$srcdir/$pkgname-$_commit"
 
 build() {
-	cd $srcdir/build
-	cmake $srcdir/$pkgname-master \
+	cmake \
 		-DCMAKE_INSTALL_PREFIX=/usr \
-		-DBUILD_TESTING=OFF \
 		-DLIB_INSTALL_DIR=lib \
 		-DLIBEXEC_INSTALL_DIR=lib \
 		-DKDE_INSTALL_USE_QT_SYS_PATHS=ON \
@@ -29,11 +30,14 @@ build() {
 	make
 }
 
+check() {
+	cd "$builddir"
+	CTEST_OUTPUT_ON_FAILURE=TRUE ctest
+}
+
 package() {
-	cd $srcdir/build
+	cd "$builddir"
 	make DESTDIR="$pkgdir/" install
 }
-sha512sums="abf94dc5c0801b333b434ba408952a1be45e3c58896204689bc62a8fde5605137ed6b69f7684f47a2834dc3d1e042bb00282501f2482434871acc92e084eddd8  plasma-phone-components-682.b79bb13.tar.gz
-43046f7a0526986ca8453929c88bd1f05dfd255ba809d339a395935c7fb65ef562531a1770d3a0d7c07d6f3b9a3bbf9ea7791d12581f64d4b3dd0ccb83c945b5  plasma-phone-components.post-install
-43046f7a0526986ca8453929c88bd1f05dfd255ba809d339a395935c7fb65ef562531a1770d3a0d7c07d6f3b9a3bbf9ea7791d12581f64d4b3dd0ccb83c945b5  plasma-phone-components.post-upgrade
-43046f7a0526986ca8453929c88bd1f05dfd255ba809d339a395935c7fb65ef562531a1770d3a0d7c07d6f3b9a3bbf9ea7791d12581f64d4b3dd0ccb83c945b5  plasma-phone-components.post-deinstall"
+
+sha512sums="dc9752bc05f0822671be254d419a467fde64e0382748700f2440a8a1230dfa2cfcca9213011dd25fca4d08e4a87b1631538bd2db22fe95da6a0f28004075fdb2  plasma-phone-components-0_git20180221.tar.gz"

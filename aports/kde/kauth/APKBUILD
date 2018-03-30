@@ -1,33 +1,35 @@
+# Contributor: Bart Ribbers <bribbers@disroot.org>
+# Maintainer: Bart Ribbers <bribbers@disroot.org>
 pkgname=kauth
-pkgver=5.37.0
-pkgrel=1
+pkgver=5.44.0
+pkgrel=0
 pkgdesc='Abstraction to system policy and authentication features'
 arch="all"
 url='https://community.kde.org/Frameworks'
-license="LGPL"
-depends="polkit-qt5"
-makedepends="extra-cmake-modules qt5-qttools-dev clang py3-qt5 doxygen polkit-qt5 kcoreaddons-dev"
-source="https://download.kde.org/stable/frameworks/${pkgver%.*}/${pkgname}-${pkgver}.tar.xz"
-subpackages="$pkgname-dev"
-
-prepare() {
-	mkdir -p $srcdir/build
-}
+license="LGPL-2.1"
+depends=""
+depends_dev="kcoreaddons-dev"
+makedepends="$depends_dev extra-cmake-modules qt5-qttools-dev doxygen polkit-qt-dev polkit-qt"
+source="https://download.kde.org/stable/frameworks/${pkgver%.*}/$pkgname-$pkgver.tar.xz"
+subpackages="$pkgname-dev $pkgname-doc $pkgname-lang"
 
 build() {
-	cd $srcdir/build
-	cmake "$srcdir"/${pkgname}-${pkgver} \
+	cmake \
 		-DCMAKE_BUILD_TYPE=Release \
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DKDE_INSTALL_LIBDIR=lib \
 		-DKDE_INSTALL_LIBEXECDIR=lib \
-		-DBUILD_TESTING=OFF \
 		-DBUILD_QCH=ON
 	make
 }
 
+check() {
+	cd "$builddir"
+	CTEST_OUTPUT_ON_FAILURE=TRUE ctest -E KAuthHelperTest
+}
+
 package() {
-	cd $srcdir/build
+	cd "$builddir"
 	make DESTDIR="${pkgdir}" install
 }
-sha512sums="b97956d8360035102c9ba489806720263a0abebc06dac0b9121377030bbc16deff96cbcdfacbd1d91a6d3bd4bc868dab068a5f833bd437669b929315450eb44a  kauth-5.37.0.tar.xz"
+sha512sums="29a8c7ba1818efd2e36f1852b5c443480ef4e574f05c9c745909de1e37086c0e490d04b6e659edca8fb6d5c9d7140c2abb56386c5aa5caf8b20fc27f0a042748  kauth-5.44.0.tar.xz"

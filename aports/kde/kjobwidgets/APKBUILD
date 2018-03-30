@@ -1,32 +1,34 @@
+# Contributor: Bart Ribbers <bribbers@disroot.org>
+# Maintainer: Bart Ribbers <bribbers@disroot.org>
 pkgname=kjobwidgets
-pkgver=5.37.0
-pkgrel=1
+pkgver=5.44.0
+pkgrel=0
 pkgdesc='Widgets for tracking KJob instances'
 arch="all"
 url='https://community.kde.org/Frameworks'
-license="LGPL"
-depends="kcoreaddons kwidgetsaddons qt5-x11extras"
-makedepends="extra-cmake-modules qt5-qttools-dev clang py3-qt5 doxygen kcoreaddons-dev kwidgetsaddons-dev qt5-x11extras-dev"
+license="LGPL-2.1"
+depends=""
+depends_dev="kcoreaddons-dev kwidgetsaddons-dev qt5-x11extras-dev"
+makedepends="$depends_dev extra-cmake-modules qt5-qttools-dev doxygen"
 source="https://download.kde.org/stable/frameworks/${pkgver%.*}/${pkgname}-${pkgver}.tar.xz"
 subpackages="$pkgname-dev $pkgname-doc $pkgname-lang"
 
-prepare() {
-	mkdir -p $srcdir/build
-}
-
 build() {
-	cd $srcdir/build
-	cmake "$srcdir"/${pkgname}-${pkgver} \
+	cmake \
 		-DCMAKE_BUILD_TYPE=Release \
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DKDE_INSTALL_LIBDIR=lib \
-		-DBUILD_TESTING=OFF \
 		-DBUILD_QCH=ON
 	make
 }
 
+check() {
+	cd "$builddir"
+	CTEST_OUTPUT_ON_FAILURE=TRUE ctest
+}
+
 package() {
-	cd $srcdir/build
+	cd "$builddir"
 	make DESTDIR="${pkgdir}" install
 }
-sha512sums="81192034d3385b661f3c6b33a197a9c8e621839598623cf7ae43815b1d7733b22ae7ce86d65edd5d21437a9bfe0ec3fd0097a3947c234eb5016efc072e5e4063  kjobwidgets-5.37.0.tar.xz"
+sha512sums="9a78b36e0a7683ca65cc900caf486713514f9ae219bb31015693b0c7f93d604460ce685ea567b11364171031c9d66e8adde87e395ffe2f793afdc5bd45ada688  kjobwidgets-5.44.0.tar.xz"

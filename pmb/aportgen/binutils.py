@@ -1,5 +1,5 @@
 """
-Copyright 2017 Oliver Smith
+Copyright 2018 Oliver Smith
 
 This file is part of pmbootstrap.
 
@@ -16,21 +16,26 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with pmbootstrap.  If not, see <http://www.gnu.org/licenses/>.
 """
-import pmb.helpers.run
 import pmb.aportgen.core
+import pmb.helpers.git
+import pmb.helpers.run
 
 
 def generate(args, pkgname):
     # Copy original aport
     arch = pkgname.split("-")[1]
-    path_original = "main/binutils"
-    upstream = (args.work + "/cache_git/aports_upstream/" + path_original)
+    upstream = pmb.aportgen.core.get_upstream_aport(args, "main/binutils")
     pmb.helpers.run.user(args, ["cp", "-r", upstream, args.work + "/aportgen"])
+
+    # Architectures to build this package for
+    arches = list(pmb.config.build_device_architectures)
+    arches.remove(arch)
 
     # Rewrite APKBUILD
     fields = {
         "pkgname": pkgname,
         "pkgdesc": "Tools necessary to build programs for " + arch + " targets",
+        "arch": " ".join(arches),
         "makedepends_build": "",
         "makedepends_host": "",
         "makedepends": "gettext libtool autoconf automake bison",
@@ -53,13 +58,12 @@ def generate(args, pkgname):
                 --enable-deterministic-archives \\
                 --disable-multilib \\
                 --disable-werror \\
-                --disable-nls \\
-            || return 1
+                --disable-nls
             make
         """,
         "package": """
             cd "$builddir"
-            make install DESTDIR="$pkgdir" || return 1
+            make install DESTDIR="$pkgdir"
 
             # remove man, info folders
             rm -rf "$pkgdir"/usr/share
@@ -68,5 +72,5 @@ def generate(args, pkgname):
         "gold": None,
     }
 
-    pmb.aportgen.core.rewrite(args, pkgname, path_original, fields, "binutils",
-                              replace_functions)
+    pmb.aportgen.core.rewrite(args, pkgname, "main/binutils", fields,
+                              "binutils", replace_functions)

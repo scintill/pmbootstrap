@@ -6,7 +6,7 @@ import sys
 
 
 def make_splash(width, height, filename, landscape=False, text="", config_file=None, center=False):
-    print("Creating {}x{} splashscreen".format(width, height))
+    print("Creating ({}x{}) splashscreen {}".format(width, height, os.path.basename(filename)))
 
     config = configparser.ConfigParser()
     if config_file is not None:
@@ -14,6 +14,8 @@ def make_splash(width, height, filename, landscape=False, text="", config_file=N
 
     im = Image.new('RGB', (width, height), color=config.get('background', 'color', fallback=0))
     draw = ImageDraw.Draw(im)
+
+    spacing = width / 100 * float(config.get('logo', 'spacing', fallback='0'))
 
     font_size = int(width / 13)
     logo_size = int(width / 10)
@@ -33,10 +35,10 @@ def make_splash(width, height, filename, landscape=False, text="", config_file=N
     name_width, name_height = draw.textsize(name, font=name_font)
     logo_width, logo_height = draw.textsize(logo, font=logo_font)
 
-    draw.text(((width - (name_width + logo_width)) / 2 + logo_width, (height - name_height) / 2), name,
+    draw.text(((width - (name_width + logo_width)) / 2 + logo_width + spacing, (height - name_height) / 2), name,
               config.get('name', 'color', fallback='#ffffff'), font=name_font)
 
-    draw.text(((width - (name_width + logo_width)) / 2, (height - name_height) / 2), logo,
+    draw.text(((width - (name_width + logo_width + spacing)) / 2, (height - name_height) / 2), logo,
               config.get('logo', 'color', fallback='#009900'),
               font=logo_font)
 

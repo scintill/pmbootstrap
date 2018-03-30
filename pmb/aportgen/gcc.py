@@ -1,5 +1,5 @@
 """
-Copyright 2017 Oliver Smith
+Copyright 2018 Oliver Smith
 
 This file is part of pmbootstrap.
 
@@ -16,21 +16,26 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with pmbootstrap.  If not, see <http://www.gnu.org/licenses/>.
 """
-import pmb.helpers.run
 import pmb.aportgen.core
+import pmb.helpers.git
+import pmb.helpers.run
 
 
 def generate(args, pkgname):
     # Copy original aport
     arch = pkgname.split("-")[1]
-    path_original = "main/gcc"
-    upstream = (args.work + "/cache_git/aports_upstream/" + path_original)
+    upstream = pmb.aportgen.core.get_upstream_aport(args, "main/gcc")
     pmb.helpers.run.user(args, ["cp", "-r", upstream, args.work + "/aportgen"])
+
+    # Architectures to build this package for
+    arches = list(pmb.config.build_device_architectures)
+    arches.remove(arch)
 
     # Rewrite APKBUILD
     fields = {
         "pkgname": pkgname,
         "pkgdesc": "Stage2 cross-compiler for " + arch,
+        "arch": " ".join(arches),
         "depends": "isl binutils-" + arch,
         "makedepends_build": "gcc g++ paxmark bison flex texinfo gawk zip gmp-dev mpfr-dev mpc1-dev zlib-dev",
         "makedepends_host": "linux-headers gmp-dev mpfr-dev mpc1-dev isl-dev zlib-dev musl-dev-" + arch + " binutils-" + arch,
@@ -98,10 +103,6 @@ def generate(args, pkgname):
         '*package() {*': "_package() {"
     }
 
-    pmb.aportgen.core.rewrite(
-        args,
-        pkgname,
-        path_original,
-        fields,
-        replace_simple=replace_simple,
-        below_header=below_header)
+    pmb.aportgen.core.rewrite(args, pkgname, "main/gcc", fields,
+                              replace_simple=replace_simple,
+                              below_header=below_header)

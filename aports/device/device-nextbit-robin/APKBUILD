@@ -1,0 +1,22 @@
+# Reference: <https://postmarketos.org/devicepkg>
+pkgname="device-nextbit-robin"
+pkgdesc="Nextbit Robin"
+pkgver=0.1
+pkgrel=3
+url="https://postmarketos.org"
+license="MIT"
+arch="noarch"
+options="!check"
+depends="postmarketos-base linux-nextbit-robin mkbootimg msm-fb-refresher mesa-dri-swrast"
+makedepends="devicepkg-dev"
+source="deviceinfo"
+
+build() {
+	devicepkg_build $startdir $pkgname
+}
+
+package() {
+	devicepkg_package $startdir $pkgname
+}
+
+sha512sums="5619a32226c4d69782e671813ab3ca1432e87382674aa4aa0af7da1b8a46cb77646892ac3edfbdca0b346deb8ae0ee52aa63bc21ac04c34096a0524ecc3ab954  deviceinfo"

@@ -18,30 +18,52 @@
 
 set -e
 DIR="$(cd "$(dirname "$0")" && pwd -P)"
+cd "$DIR/.."
+
+# Find CHANGEMEs in APKBUILDs
+if grep -qr '(CHANGEME!)' aports/device; then
+	echo "ERROR: Please replace '(CHANGEME!)' in the following files:"
+	grep --color=always -r '(CHANGEME!)' aports/device
+	exit 1
+fi
 
 # Shell: shellcheck
-cd "$DIR"/..
 sh_files="
 	./test/static_code_analysis.sh
+	./test/testcases_fast.sh
+	./aports/main/postmarketos-base/firmwareload.sh
 	./aports/main/postmarketos-mkinitfs/init.sh.in
 	./aports/main/postmarketos-mkinitfs/init_functions.sh
+	./aports/main/postmarketos-mkinitfs-hook-debug-shell/20-debug-shell.sh
+	./aports/main/postmarketos-update-kernel/update-kernel.sh
+	./aports/main/postmarketos-android-recovery-installer/build_zip.sh
+	./aports/main/postmarketos-android-recovery-installer/pmos_chroot
+	./aports/main/postmarketos-android-recovery-installer/pmos_install
+	./aports/main/postmarketos-android-recovery-installer/pmos_install_functions
+	./aports/main/postmarketos-android-recovery-installer/pmos_setpw
+	./aports/main/postmarketos-android-recovery-installer/update-binary
+	./aports/main/mdss-fb-init-hack/mdss-fb-init-hack.sh
+	./aports/main/postmarketos-ui-hildon/postmarketos-ui-hildon.post-install
+	$(find . -path './aports/main/postmarketos-ui-hildon/*.sh')
 	$(find . -name '*.trigger')
+	$(find . -path './aports/main/devicepkg-dev/*.sh')
 "
 for file in ${sh_files}; do
 	echo "Test with shellcheck: $file"
 	cd "$DIR/../$(dirname "$file")"
-	shellcheck -x "$(basename "$file")"
+	shellcheck -e SC1008 -x "$(basename "$file")"
 done
 
 # Python: flake8
 # E501: max line length
 # F401: imported, but not used, does not make sense in __init__ files
 # E402: module import not on top of file, not possible for testcases
+# E722: do not use bare except
 cd "$DIR"/..
 echo "Test with flake8: *.py"
 echo "NOTE: Run 'autopep8 -ria $PWD' to fix code style issues"
 py_files="$(find . -name '*.py')"
-_ignores="E501,E402"
+_ignores="E501,E402,E722"
 # shellcheck disable=SC2086
 flake8 --exclude=__init__.py --ignore "$_ignores" $py_files
 # shellcheck disable=SC2086

@@ -1,5 +1,5 @@
 """
-Copyright 2017 Oliver Smith
+Copyright 2018 Oliver Smith
 
 This file is part of pmbootstrap.
 
@@ -27,7 +27,7 @@ import pmb.chroot.apk
 def list_chroot(args, suffix, remove_prefix=True):
     ret = []
     prefix = pmb.config.initfs_hook_prefix
-    for pkgname in pmb.chroot.apk.installed(args, suffix):
+    for pkgname in pmb.chroot.apk.installed(args, suffix).keys():
         if pkgname.startswith(prefix):
             if remove_prefix:
                 ret.append(pkgname[len(prefix):])

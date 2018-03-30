@@ -1,5 +1,5 @@
 """
-Copyright 2017 Oliver Smith
+Copyright 2018 Oliver Smith
 
 This file is part of pmbootstrap.
 
@@ -34,11 +34,55 @@ def copy_resolv_conf(args, suffix="native"):
     Use pythons super fast file compare function (due to caching)
     and copy the /etc/resolv.conf to the chroot, in case it is
     different from the host.
+    If the file doesn't exist, create an empty file with 'touch'.
     """
     host = "/etc/resolv.conf"
     chroot = args.work + "/chroot_" + suffix + host
-    if not os.path.exists(chroot) or not filecmp.cmp(host, chroot):
-        pmb.helpers.run.root(args, ["cp", host, chroot])
+    if os.path.exists(host):
+        if not os.path.exists(chroot) or not filecmp.cmp(host, chroot):
+            pmb.helpers.run.root(args, ["cp", host, chroot])
+    else:
+        pmb.helpers.run.root(args, ["touch", chroot])
+
+
+def create_device_nodes(args, suffix):
+    error = "Failed to create device nodes in the '" + suffix + "' chroot."
+
+    # Folder sturcture
+    chroot = args.work + "/chroot_" + suffix
+    pmb.helpers.run.root(args, ["mkdir", "-p", chroot + "/dev"])
+
+    try:
+        # Create all device nodes as specified in the config
+        for dev in pmb.config.chroot_device_nodes:
+            path = chroot + "/dev/" + str(dev[4])
+            if not os.path.exists(path):
+                pmb.helpers.run.root(args, ["mknod",
+                                            "-m", str(dev[0]),  # permissions
+                                            path,  # name
+                                            str(dev[1]),  # type
+                                            str(dev[2]),  # major
+                                            str(dev[3]),  # minor
+                                            ])
+
+        # Verify major and minor numbers of created nodes
+        for dev in pmb.config.chroot_device_nodes:
+            path = chroot + "/dev/" + str(dev[4])
+            stat_result = os.stat(path)
+            rdev = stat_result.st_rdev
+            assert os.major(rdev) == dev[2], "Wrong major in " + path
+            assert os.minor(rdev) == dev[3], "Wrong minor in " + path
+
+        # Verify /dev/zero reading and writing
+        path = chroot + "/dev/zero"
+        with open(path, "r+b", 0) as handle:
+            assert handle.write(bytes([0xff])), "Write failed for " + path
+            assert handle.read(1) == bytes([0x00]), "Read failed for " + path
+
+    # On failure: Show filesystem-related error
+    except Exception as e:
+        logging.info(str(e) + "!")
+        raise RuntimeError(error)
 
 
 def init(args, suffix="native"):
@@ -66,52 +110,43 @@ def init(args, suffix="native"):
 
     logging.info("(" + suffix + ") install alpine-base")
 
-    # Initialize cache
+    # Initialize device nodes and cache
+    create_device_nodes(args, suffix)
     apk_cache = args.work + "/cache_apk_" + arch
-    pmb.helpers.run.root(args, ["ln", "-s", "/var/cache/apk", chroot +
+    pmb.helpers.run.root(args, ["ln", "-s", "-f", "/var/cache/apk", chroot +
                                 "/etc/apk/cache"])
 
     # Initialize /etc/apk/keys/, resolv.conf, repositories
-    logging.debug(pmb.config.apk_keys_path)
     for key in glob.glob(pmb.config.apk_keys_path + "/*.pub"):
         pmb.helpers.run.root(args, ["cp", key, args.work +
                                     "/config_apk_keys/"])
     copy_resolv_conf(args, suffix)
     pmb.chroot.apk.update_repository_list(args, suffix)
 
-    # Install alpine-base (no clean exit for non-native chroot!)
-    pmb.chroot.apk_static.run(args, ["-U", "--root", chroot,
-                                     "--cache-dir", apk_cache, "--initdb", "--arch", arch,
-                                     "add", "alpine-base"], check=(not emulate))
-
-    # Create device nodes
-    for dev in pmb.config.chroot_device_nodes:
-        path = chroot + "/dev/" + str(dev[4])
-        if not os.path.exists(path):
-            pmb.helpers.run.root(args, ["mknod",
-                                        "-m", str(dev[0]),  # permissions
-                                        path,  # name
-                                        str(dev[1]),  # type
-                                        str(dev[2]),  # major
-                                        str(dev[3]),  # minor
-                                        ])
-            if not os.path.exists(path):
-                raise RuntimeError("Failed to create device node in chroot for " +
-                                   dev[4] + "! (This might be caused by setting the work folder" +
-                                   " to an eCryptfs folder.)")
-
-    # Non-native chroot: install qemu-user-binary, run apk fix
+    # Non-native chroot: install qemu-user-binary
     if emulate:
         arch_debian = pmb.parse.arch.alpine_to_debian(arch)
+        pmb.helpers.run.root(args, ["mkdir", "-p", chroot + "/usr/bin"])
         pmb.helpers.run.root(args, ["cp", args.work +
                                     "/chroot_native/usr/bin/qemu-" + arch_debian + "-static",
                                     chroot + "/usr/bin/qemu-" + arch_debian + "-static"])
-        pmb.chroot.root(args, ["apk", "fix"], suffix,
-                        auto_init=False)
 
-    # Add user (-D: don't assign password)
-    logging.debug("Add user")
-    pmb.chroot.root(args, ["adduser", "-D", "user", "-u", pmb.config.chroot_uid_user],
-                    suffix, auto_init=False)
-    pmb.chroot.root(args, ["chown", "-R", "user:user", "/home/user"],
-                    suffix)
+    # Install alpine-base
+    pmb.helpers.repo.update(args, arch)
+    pmb.chroot.apk_static.run(args, ["--no-progress", "--root", chroot,
+                                     "--cache-dir", apk_cache, "--initdb", "--arch", arch,
+                                     "add", "alpine-base"])
+
+    # Building chroots: create "pmos" user, add symlinks to /home/pmos
+    if not suffix.startswith("rootfs_"):
+        pmb.chroot.root(args, ["adduser", "-D", "pmos", "-u",
+                        pmb.config.chroot_uid_user], suffix, auto_init=False)
+
+        # Create the links (with subfolders if necessary)
+        for target, link_name in pmb.config.chroot_home_symlinks.items():
+            link_dir = os.path.dirname(link_name)
+            if not os.path.exists(chroot + link_dir):
+                pmb.chroot.user(args, ["mkdir", "-p", link_dir], suffix)
+            pmb.chroot.user(args, ["ln", "-s", target, link_name], suffix)
+            pmb.chroot.root(args, ["chown", "pmos:pmos", target],
+                            suffix)

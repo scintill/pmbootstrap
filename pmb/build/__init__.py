@@ -1,5 +1,5 @@
 """
-Copyright 2017 Oliver Smith
+Copyright 2018 Oliver Smith
 
 This file is part of pmbootstrap.
 
@@ -19,7 +19,9 @@ along with pmbootstrap.  If not, see <http://www.gnu.org/licenses/>.
 # Exported functions
 from pmb.build.init import init
 from pmb.build.checksum import checksum
-from pmb.build.other import copy_to_buildpath, is_necessary, \
-    symlink_noarch_package, find_aport, ccache_stats, index_repo
-from pmb.build.package import package
 from pmb.build.menuconfig import menuconfig
+from pmb.build.newapkbuild import newapkbuild
+from pmb.build.other import copy_to_buildpath, is_necessary, \
+    find_aport, index_repo
+from pmb.build._package import package
+from pmb.build.qemu_workaround_aarch64 import qemu_workaround_aarch64

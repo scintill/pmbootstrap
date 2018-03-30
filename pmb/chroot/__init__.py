@@ -1,5 +1,5 @@
 """
-Copyright 2017 Oliver Smith
+Copyright 2018 Oliver Smith
 
 This file is part of pmbootstrap.
 
@@ -20,5 +20,6 @@ from pmb.chroot.init import init
 from pmb.chroot.mount import mount
 from pmb.chroot.root import root
 from pmb.chroot.user import user
+from pmb.chroot.user import exists as user_exists
 from pmb.chroot.shutdown import shutdown
 from pmb.chroot.zap import zap

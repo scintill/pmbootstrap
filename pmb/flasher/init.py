@@ -1,5 +1,5 @@
 """
-Copyright 2017 Oliver Smith
+Copyright 2018 Oliver Smith
 
 This file is part of pmbootstrap.
 
@@ -23,7 +23,7 @@ import pmb.helpers.mount
 
 def init(args):
     # Validate method
-    method = args.deviceinfo["flash_methods"]
+    method = args.deviceinfo["flash_method"]
     if method not in pmb.config.flashers:
         raise RuntimeError("Flash method " + method + " is not supported by the"
                            " current configuration. However, adding a new flash method is "

@@ -1,34 +1,38 @@
+# Contributor: Bart Ribbers <bribbers@disroot.org>
+# Maintainer: Bart Ribbers <bribbers@disroot.org>
 pkgname=krunner
-pkgver=5.37.0
-pkgrel=1
+pkgver=5.44.0
+pkgrel=0
 pkgdesc='Framework for providing different actions given a string query'
 arch="all"
 url='https://community.kde.org/Frameworks'
-license="GPL"
-depends="plasma-framework threadweaver"
-makedepends="extra-cmake-modules kdoctools-dev python qt5-qttools-dev plasma-framework threadweaver-dev
-			 kactivities-dev kbookmarks-dev kcompletion-dev kjobwidgets-dev solid-dev kxmlgui-dev
-			 plasma-framework-dev kpackage-dev"
+license="LGPL-2.1"
+depends=""
+depends_dev="plasma-framework-dev threadweaver-dev kactivities-dev kbookmarks-dev kcompletion-dev
+			kjobwidgets-dev solid-dev kxmlgui-dev kpackage-dev qt5-qtdeclarative-dev kconfig-dev
+			kcoreaddons-dev ki18n-dev kservice-dev kwidgetsaddons-dev kitemviews-dev kconfigwidgets-dev
+			kauth-dev kcodecs-dev kwindowsystem-dev kio-dev"
+makedepends="$depends_dev extra-cmake-modules kdoctools-dev qt5-qttools-dev doxygen"
 source="https://download.kde.org/stable/frameworks/${pkgver%.*}/${pkgname}-${pkgver}.tar.xz"
 subpackages="$pkgname-dev $pkgname-doc"
-
-prepare() {
-	mkdir $srcdir/build
-}
+options="!check" # Fails due to requiring running X11
 
 build() {
-	cd $srcdir/build
-	cmake "$srcdir"/${pkgname}-${pkgver} \
+	cmake \
 		-DCMAKE_BUILD_TYPE=Release \
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DKDE_INSTALL_LIBDIR=lib \
-		-DBUILD_TESTING=OFF \
 		-DBUILD_QCH=ON
 	make
 }
 
+check() {
+	cd "$builddir"
+	CTEST_OUTPUT_ON_FAILURE=TRUE ctest
+}
+
 package() {
-	cd $srcdir/build
+	cd "$builddir"
 	make DESTDIR="${pkgdir}" install
 }
-sha512sums="68e046bd62258d8ea55598959d6a0e9aa8f3686f9e2e023cec1c848b7683a001d0f2c09bc88bd3f86283868ed90c2d984a000899ad86348f96c1dda7559677dc  krunner-5.37.0.tar.xz"
+sha512sums="a2459066248c2e580eab41c5e31e2e9d3c917fc68deee22efc2f3af3b80ed63a6a21e500e062c925ec284d85405eca3241cbe2e6be4ee9c400c1d9e932d37e2a  krunner-5.44.0.tar.xz"

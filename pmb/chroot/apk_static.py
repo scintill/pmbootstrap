@@ -1,5 +1,5 @@
 """
-Copyright 2017 Oliver Smith
+Copyright 2018 Oliver Smith
 
 This file is part of pmbootstrap.
 
@@ -107,8 +107,9 @@ def verify_signature(args, files, sigkey_path):
         os.unlink(files["sig"]["temp_path"])
         os.unlink(files["apk"]["temp_path"])
         raise RuntimeError("Failed to validate signature of apk.static."
-                           " There's something wrong with the archive - run 'pmbootstrap"
-                           " zap -a' and try again!")
+                           " Either openssl is not installed, or the"
+                           " download failed. Run 'pmbootstrap zap -hc' to"
+                           " delete the download and try again.")
 
 
 def extract(args, version, apk_path):
@@ -158,21 +159,26 @@ def init(args):
     """
     Download, verify, extract $WORK/apk.static.
     """
-    apkindex = download(args, "APKINDEX.tar.gz")
-    index_data = pmb.parse.apkindex.read(args, "apk-tools-static", apkindex)
+    # Get and parse the APKINDEX
+    apkindex = pmb.helpers.repo.alpine_apkindex_path(args, "main")
+    index_data = pmb.parse.apkindex.package(args, "apk-tools-static",
+                                            indexes=[apkindex])
     version = index_data["version"]
+
+    # Extract and verify the apk-tools-static version
     version_min = pmb.config.apk_tools_static_min_version
     apk_name = "apk-tools-static-" + version + ".apk"
     if pmb.parse.version.compare(version, version_min) == -1:
-        raise RuntimeError("You have an outdated version of apk-tools-static"
-                           " (your version: " + version +
-                           ", expected at least:"
-                           " " + version_min + "). Delete your http cache and zap"
-                           " all chroots, then try again: 'pmbootstrap zap -hc'")
+        raise RuntimeError("Your APKINDEX has an outdated version of"
+                           " apk-tools-static (your version: " + version +
+                           ", expected at least:" + version_min + "). Please" +
+                           " run 'pmbootstrap update'.")
+
+    # Download, extract, verify apk-tools-static
     apk_static = download(args, apk_name)
     extract(args, version, apk_static)
 
 
-def run(args, parameters, check):
+def run(args, parameters, check=True):
     pmb.helpers.run.root(
         args, [args.work + "/apk.static"] + parameters, check=check)

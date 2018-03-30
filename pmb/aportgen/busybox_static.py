@@ -1,5 +1,5 @@
 """
-Copyright 2017 Oliver Smith
+Copyright 2018 Oliver Smith
 
 This file is part of pmbootstrap.
 
@@ -26,14 +26,12 @@ import pmb.chroot.apk_static
 
 
 def generate(args, pkgname):
-    # Install busybox-static in chroot (so we have the APKINDEX and verified
-    # apks)
+    # Install busybox-static in chroot to get verified apks
     arch = pkgname.split("-")[2]
-    apkindex = pmb.chroot.apk_static.download(args, "APKINDEX.tar.gz")
     pmb.chroot.apk.install(args, ["busybox-static"], "buildroot_" + arch)
 
     # Parse version from APKINDEX
-    package_data = pmb.parse.apkindex.read(args, "busybox", apkindex)
+    package_data = pmb.parse.apkindex.package(args, "busybox")
     version = package_data["version"]
     pkgver = version.split("-r")[0]
     pkgrel = version.split("-r")[1]
@@ -51,7 +49,7 @@ def generate(args, pkgname):
     path_target = (args.work + "/cache_distfiles/busybox-static-" +
                    version + "-" + arch + ".apk")
     if not os.path.exists(path_target):
-        pmb.helpers.run.user(args, ["cp", path, path_target])
+        pmb.helpers.run.root(args, ["cp", path, path_target])
 
     # Hash the distfile
     hashes = pmb.chroot.user(args, ["sha512sum",

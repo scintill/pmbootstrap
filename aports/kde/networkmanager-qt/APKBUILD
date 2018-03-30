@@ -1,21 +1,18 @@
 pkgname=networkmanager-qt
-pkgver=5.37.0
-pkgrel=1
+pkgver=5.44.0
+pkgrel=0
 pkgdesc='Qt wrapper for NetworkManager API'
 arch="all"
 url='https://community.kde.org/Frameworks'
-license="LGPL"
-depends="networkmanager qt5-qtbase"
-makedepends="extra-cmake-modules doxygen qt5-qttools-dev networkmanager-dev"
-source="https://download.kde.org/stable/frameworks/${pkgver%.*}/${pkgname}-${pkgver}.tar.xz"
+license="LGPL-2.1"
+depends="networkmanager"
+depends_dev="networkmanager-dev"
+makedepends="$depends_dev extra-cmake-modules doxygen qt5-qttools-dev"
 subpackages="$pkgname-dev $pkgname-doc"
-
-prepare() {
-	mkdir -p $srcdir/build
-}
+source="https://download.kde.org/stable/frameworks/${pkgver%.*}/${pkgname}-${pkgver}.tar.xz"
 
 build() {
-	cd $srcdir/build
+	cd "$builddir"
 	cmake "$srcdir"/${pkgname}-${pkgver} \
 		-DCMAKE_BUILD_TYPE=Release \
 		-DCMAKE_INSTALL_PREFIX=/usr \
@@ -25,8 +22,14 @@ build() {
 	make
 }
 
+check() {
+	cd "$builddir"
+	CTEST_OUTPUT_ON_FAILURE=TRUE ctest
+}
+
+
 package() {
-	cd $srcdir/build
+	cd "$builddir"
 	make DESTDIR="${pkgdir}" install
 }
-sha512sums="6a6cd1382cb6483928bb9eac7590c2984751f47fe0f71d7c05723509dc1bb4bda4bf6854f3b662c9ddcaa7d6c1f6d7001e459a0bd335a24f2c14d00d3878bc75  networkmanager-qt-5.37.0.tar.xz"
+sha512sums="926ece0d7e869613bc78cb71c915ad8b1573b4111ab38377dee9c196ba31422a95311819c36aa4e14b42590fcc628141d5ee8d1e025f56c57da5e5b48f438725  networkmanager-qt-5.44.0.tar.xz"

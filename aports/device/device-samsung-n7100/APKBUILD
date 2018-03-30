@@ -1,27 +1,23 @@
 pkgname=device-samsung-n7100
 pkgver=1
-pkgrel=7
+pkgrel=15
 pkgdesc="Samsung Galaxy Note II (GSM)"
 url="https://github.com/postmarketOS"
 arch="noarch"
 license="MIT"
-depends="linux-samsung-n7100 mkbootimg"
+depends="postmarketos-base linux-samsung-n7100 mkbootimg mesa-dri-swrast"
 makedepends=""
 install=""
 subpackages=""
-source="deviceinfo 90-android.rules"
+source="deviceinfo 90-android-touch-dev.rules"
 options="!check"
-
-build() {
-	return 0
-}
 
 package() {
 	install -D -m644 "$srcdir/deviceinfo" \
 		"$pkgdir/etc/deviceinfo"
-	install -D -m644 "$srcdir"/90-android.rules \
-		"$pkgdir"/etc/udev/rules.d/90-android.rules
+	install -D -m644 "$srcdir"/90-android-touch-dev.rules \
+		"$pkgdir"/etc/udev/rules.d/90-android-touch-dev.rules
 }
 
-sha512sums="f6dc28a228219db4c3883dfa11454529271e00794d6705e6e51369e1def5512db2b74fda52b5855f2dd10bc1c155a24cfdb2d751373edcd1cd3677e1e59eff65  deviceinfo
-8aead706ddb118a44de7d049f07d10a27e727d17724058d132e4ec4fa73fed29c9ccfe03f02aca459c922ec0fbba24e171fe3c76e33f7c5462631e3dd5506e36  90-android.rules"
+sha512sums="97f5d0701632b1cd8610f02b555f06652eb2bda9ab838b8a6ab46a99b9fe771d6bf0255f882b7f9aa1432d68abfc9c66a836d7db339cf822bb7c5adcbd5cc33a  deviceinfo
+089635daddd88eec35451bfe98dc3713035e3623c896dd21305b990ecf422e8fbb54e010cf347919bbb3a7385f639ab119280477fe0783df3228168d97d96fc6  90-android-touch-dev.rules"

@@ -1,5 +1,5 @@
 """
-Copyright 2017 Oliver Smith
+Copyright 2018 Oliver Smith
 
 This file is part of pmbootstrap.
 
@@ -29,7 +29,7 @@ def get_running_pid(args):
     """
     :returns: the running distccd's pid as integer or None
     """
-    pidfile = args.work + "/chroot_native/home/user/distccd.pid"
+    pidfile = args.work + "/chroot_native/home/pmos/distccd.pid"
     if not os.path.exists(pidfile):
         return None
     with open(pidfile, "r") as handle:
@@ -74,7 +74,7 @@ def is_running(args):
         os.kill(pid, 0)
     except OSError as err:
         if err.errno == errno.ESRCH:  # no such process
-            pmb.chroot.root(args, ["rm", "/home/user/distccd.pid"])
+            pmb.chroot.root(args, ["rm", "/home/pmos/distccd.pid"])
             return False
         elif err.errno == errno.EPERM:  # access denied
             return get_running_info(args)
@@ -83,16 +83,21 @@ def is_running(args):
 def generate_cmdline(args, arch):
     """
     :returns: a dictionary suitable for pmb.chroot.user(), to start the distccd
-              with the cross-compiler in the path and all options set.
+              with all options set.
+    NOTE: The distcc client of the foreign arch chroot passes the
+          absolute path to the compiler, which points to
+          "/usr/lib/arch-bin-masquerade/armhf/gcc" for example. This also
+          exists in the native chroot, and points to the armhf cross-
+          compiler there (both the native and foreign chroot have the
+          arch-bin-masquerade package installed, which creates the
+          wrapper scripts).
     """
-    path = "/usr/lib/gcc-cross-wrappers/" + arch + "/bin:" + pmb.config.chroot_path
-    ret = ["PATH=" + path,
-           "distccd",
-           "--pid-file", "/home/user/distccd.pid",
+    ret = ["distccd",
+           "--pid-file", "/home/pmos/distccd.pid",
            "--listen", "127.0.0.1",
            "--allow", "127.0.0.1",
            "--port", args.port_distccd,
-           "--log-file", "/home/user/distccd.log",
+           "--log-file", "/home/pmos/distccd.log",
            "--jobs", args.jobs,
            "--nice", "19",
            "--job-lifetime", "60",
@@ -110,15 +115,14 @@ def start(args, arch):
     if info and info["cmdline"] == " ".join(cmdline):
         return
     stop(args)
-    pmb.chroot.apk.install(args, ["distcc", "gcc-cross-wrappers"])
+    pmb.chroot.apk.install(args, ["distcc", "arch-bin-masquerade"])
 
     # Start daemon with cross-compiler in path
     logging.info("(native) start distccd (" + arch + ") on 127.0.0.1:" +
                  args.port_distccd)
     pmb.chroot.user(args, cmdline)
 
-    # Write down the arch and cmdline (which also contains the relevant
-    # environment variables, /proc/$pid/cmdline does not!)
+    # Write down the arch and cmdline
     info = configparser.ConfigParser()
     info["distccd"] = {}
     info["distccd"]["arch"] = arch

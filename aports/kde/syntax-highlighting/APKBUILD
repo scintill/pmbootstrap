@@ -1,38 +1,35 @@
+# Contributor: Bart Ribbers <bribbers@disroot.org>
+# Maintainer: Bart Ribbers <bribbers@disroot.org>
 pkgname=syntax-highlighting
-pkgver=5.37.0
-pkgrel=1
+pkgver=5.44.0
+pkgrel=0
 pkgdesc='Syntax highlighting engine for structured text and code'
 arch="all"
 url='https://community.kde.org/Frameworks'
-license="GPL2"
-depends="qt5-qtbase"
-makedepends="extra-cmake-modules qt5-qtxmlpatterns-dev qt5-qttools-dev"
-source="https://download.kde.org/stable/frameworks/${pkgver%.*}/${pkgname}-${pkgver}.tar.xz
-        apkbuild-syntax-highlight.patch"
+license="LGPL-2.1"
+depends=""
+depends_dev="qt5-qtbase-dev"
+makedepends="$depends_dev extra-cmake-modules qt5-qttools-dev doxygen"
+source="https://download.kde.org/stable/frameworks/${pkgver%.*}/${pkgname}-${pkgver}.tar.xz"
 subpackages="$pkgname-dev $pkgname-doc $pkgname-lang"
 
-prepare() {
-	mkdir -p $srcdir/build
-
-	# Add APKBUILD syntax highlighting
-	cd "$srcdir"/$pkgname-$pkgver
-	patch -p1 -i ../apkbuild-syntax-highlight.patch
-}
 
 build() {
-	cd $srcdir/build
-	cmake "$srcdir"/$pkgname-$pkgver \
+	cmake \
 		-DCMAKE_INSTALL_PREFIX=/usr \
 		-DCMAKE_BUILD_TYPE=Release \
 		-DCMAKE_INSTALL_LIBDIR=lib \
-		-DBUILD_TESTING=OFF \
 		-DBUILD_QCH=ON
 	make
 }
 
+check() {
+	cd "$builddir"
+	CTEST_OUTPUT_ON_FAILURE=TRUE ctest
+}
+
 package() {
-	cd $srcdir/build
+	cd "$builddir"
 	make DESTDIR="$pkgdir" install
 }
-sha512sums="d49f62934283c07c1b6e8fad11b9fa469b21bb55f35ddbc6c28ab29bd79b7cba67a93d0b46abb8b3d86ee7ba7a90ea50a98553aac7bdfe396bc2b010611c24c2  syntax-highlighting-5.37.0.tar.xz
-0722d3c44c52f70eae5636c7f912e8e53491a728c96968705c14621fb38749583d855ffdf07ea84cecfcfce0e6c295fe500a06190f7bc82082d67986d879f66e  apkbuild-syntax-highlight.patch"
+sha512sums="6d503648c7572ec049a2e534318cc1bc5f0d83a1460e92f5c0fb46f29a6891ea1005ec0cf6bf19525d543a3d983c9e0c5834cffd2f46c449701ca9d53f3adce1  syntax-highlighting-5.44.0.tar.xz"

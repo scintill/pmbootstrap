@@ -1,38 +1,41 @@
+# Reference: <https://postmarketos.org/devicepkg>
 pkgname=device-samsung-i9070
 pkgver=1
-pkgrel=9
+pkgrel=23
 pkgdesc="Samsung Galaxy S Advance"
 url="https://github.com/postmarketOS"
 arch="noarch"
 license="MIT"
-depends="linux-samsung-i9070"
-makedepends=""
+depends="postmarketos-base linux-samsung-i9070 mesa-dri-swrast"
+makedepends="devicepkg-dev"
 install=""
-subpackages=""
+subpackages="$pkgname-nonfree-firmware:nonfree_firmware"
 source="
 	deviceinfo
 	initfs-hook.sh
-	90-android.rules
 	modules-load.conf
 "
 options="!check"
 
 build() {
-	return 0
+	devicepkg_build $startdir $pkgname
 }
 
 package() {
-	install -D -m644 "$srcdir/deviceinfo" \
-		"$pkgdir/etc/deviceinfo"
-	install -D -m644 "$srcdir"/initfs-hook.sh \
+	devicepkg_package $startdir $pkgname
+
+	install -Dm644 "$srcdir"/initfs-hook.sh \
 		"$pkgdir"/etc/postmarketos-mkinitfs/hooks/00-${pkgname}.sh
-	install -D -m644 "$srcdir"/90-android.rules \
-		"$pkgdir"/etc/udev/rules.d/90-android.rules
-	install -D -m644 "$srcdir"/modules-load.conf \
+	install -Dm644 "$srcdir"/modules-load.conf \
 		"$pkgdir"/etc/modules-load.d/00-${pkgname}.conf
 }
 
-sha512sums="7e11955f8db3ce3a2645d8efe162d1a1989ed79373b16384360301d2b84e26fa244696ad420d83cba2ad80a5663967394e3ea6a7d066c7e49d1cbbcb87dda0e3  deviceinfo
-098187f6ab56d2542f98f1b5fbcf493431f665a4300db05e859357366e39b02a3d508bfd94c1d1bd7c669261e7ef0d4e1aef1fdbb15541fe34f3f48a6caa247f  initfs-hook.sh
-ffa8ba47539f0b4a931c560811d7842c7f5270631066c270322859c1ef77e63fba09a8462c2533bd6d095056b2c7936c2d4fc4e225f3cff45169f121bf93d8ed  90-android.rules
+nonfree_firmware() {
+	pkgdesc="Wifi firmware"
+	depends="firmware-samsung-i9070"
+	mkdir "$subpkgdir"
+}
+
+sha512sums="fef89f69b97c294f10f5d016d76a42cde0042e746df870541c37b525d045633265b91cca68c39513662e8319a6af9990c38bd7436599d3d10be7d9baed4351d3  deviceinfo
+449e5047f9c15d536233fe2836cf10ae3dd2bf46f1c12ad0423f098bd54bff357438747a3c23aec9b1d8826146f87ff39d657c2b48247fb5ac4ebdeed65634fa  initfs-hook.sh
 61e8becbf6fa7c1c6c42e481083f5981ae7af33a48cbc53e817d8ac2c6a8e4f67a54b32ae3b8f5f25f7b412165a849dc93a629110dc47b0d16927bf2a12eb7e1  modules-load.conf"

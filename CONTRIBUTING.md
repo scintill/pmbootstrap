@@ -1,15 +1,16 @@
 ## Reporting issues
-* Consider joining the [chat](https://github.com/postmarketOS/pmbootstrap/wiki/Matrix-and-IRC) for instant help.
-* Maybe your question is answered in the [wiki](https://github.com/postmarketOS/pmbootstrap/wiki) somewhere. [Search](https://github.com/postmarketOS/pmbootstrap/search?q=&type=Wikis&utf8=%E2%9C%93) first!
+* Consider joining the [chat](https://wiki.postmarketos.org/wiki/Matrix_and_IRC) for instant help.
+* Maybe your question is answered in the [wiki](https://wiki.postmarketos.org/) somewhere. [Search](https://wiki.postmarketos.org/index.php?search=&title=Special%3ASearch&go=Go) first!
 * Otherwise, just ask what you want to know. We're happy if we can help you and glad that you're using `pmbootstrap`!
 
 ## Development
 
-See pmbootstrap's [Development Guide](https://github.com/postmarketOS/pmbootstrap/wiki/Development-guide).
+See pmbootstrap's [Development Guide](https://wiki.postmarketos.org/wiki/Development_guide).
 
 ### Contributing code changes
 * [Fork](https://guides.github.com/activities/forking/) this repository, commit your changes and then make a [pull-request](https://guides.github.com/activities/forking/#making-a-pull-request) (PR).
 * Please test your code before submitting a PR.
+* We squash all commits from one PR into one commit. Please make multiple PRs if you feel like your changes should appear as multiple commits in the git log ([more information](https://wiki.postmarketos.org/wiki/FAQ#Development:_Why_do_we_use_squash_.27n.27_merge_for_pull_requests.3F)).
 
 ### Shell scripting
 * We don't write scripts for `bash`, but for `busybox`'s `ash` shell, which is POSIX compliant (plus very few features from `bash`).
@@ -33,4 +34,3 @@ This is a reST style.
 
 
 **If you need any help, don't hesitate to open an [issue](https://github.com/postmarketOS/pmbootstrap/issues) and ask!**
-

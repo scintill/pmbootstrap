@@ -1,5 +1,5 @@
 """
-Copyright 2017 Oliver Smith
+Copyright 2018 Oliver Smith
 
 This file is part of pmbootstrap.
 
@@ -25,6 +25,11 @@ import pmb.helpers.cli
 
 
 def build(args, flavor, suffix):
+    # Bail out when '-s' is set
+    if args.skip_initfs:
+        logging.info("NOTE: Skipped initramfs generation (-s)!")
+        return
+
     # Update mkinitfs and hooks
     pmb.chroot.apk.install(args, ["postmarketos-mkinitfs"], suffix)
     pmb.chroot.initfs_hooks.update(args, suffix)
@@ -83,7 +88,7 @@ def ls(args, flavor, suffix, extra=False):
     if extra:
         tmp = "/tmp/initfs-extra-extracted"
     extract(args, flavor, suffix, extra)
-    pmb.chroot.user(args, ["ls", "-lahR", "."], suffix, tmp, log=False)
+    pmb.chroot.root(args, ["ls", "-lahR", "."], suffix, tmp, log=False)
     pmb.chroot.root(args, ["rm", "-r", tmp], suffix)
 
 
@@ -123,5 +128,5 @@ def frontend(args):
             build(args, flavor, suffix)
 
     if action in ["ls", "extract"]:
-        link = "https://github.com/postmarketOS/pmbootstrap/wiki/initramfs-development"
+        link = "https://wiki.postmarketos.org/wiki/Initramfs_development"
         logging.info("See also: <" + link + ">")

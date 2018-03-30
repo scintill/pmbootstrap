@@ -1,5 +1,5 @@
 """
-Copyright 2017 Oliver Smith
+Copyright 2018 Oliver Smith
 
 This file is part of pmbootstrap.
 
@@ -25,35 +25,18 @@ import pmb.install
 import pmb.chroot.apk
 import pmb.chroot.initfs
 import pmb.chroot.other
-
-
-def parse_flavor_arg(args):
-    """
-    Verify the flavor argument if specified, or return a default value.
-    """
-    # Make sure, that at least one kernel is installed
-    suffix = "rootfs_" + args.device
-    pmb.chroot.apk.install(args, ["device-" + args.device], suffix)
-
-    # Parse and verify the flavor argument
-    flavor = args.flavor
-    flavors = pmb.chroot.other.kernel_flavors_installed(args, suffix)
-    if flavor:
-        if flavor not in flavors:
-            raise RuntimeError("No kernel installed with flavor " + flavor + "!" +
-                               " Run 'pmbootstrap flasher list_flavors' to get a list.")
-        return flavor
-    if not len(flavors):
-        raise RuntimeError(
-            "No kernel flavors installed in chroot " + suffix + "! Please let"
-            " your device package depend on a package starting with 'linux-'.")
-    return flavors[0]
+import pmb.export.frontend
+import pmb.helpers.frontend
+import pmb.parse.kconfig
 
 
 def kernel(args):
     # Rebuild the initramfs, just to make sure (see #69)
-    flavor = parse_flavor_arg(args)
+    flavor = pmb.helpers.frontend._parse_flavor(args)
     pmb.chroot.initfs.build(args, flavor, "rootfs_" + args.device)
+
+    # Check kernel config
+    pmb.parse.kconfig.check(args, flavor)
 
     # Generate the paths and run the flasher
     if args.action_flasher == "boot":
@@ -64,12 +47,10 @@ def kernel(args):
         pmb.flasher.run(args, "flash_kernel", flavor)
     logging.info("You will get an IP automatically assigned to your "
                  "USB interface shortly.")
-    logging.info("Connect to the telnet session and type your LUKS password"
-                 " to boot postmarketOS (not necessary if full disk"
-                 " encryption is disabled):")
-    logging.info("telnet " + pmb.config.default_ip)
-    logging.info("Then you can connect to your device using ssh:")
-    logging.info("ssh user@" + pmb.config.default_ip)
+    logging.info("Then you can connect to your device using ssh after pmOS has booted:")
+    logging.info("ssh {}@{}".format(args.user, pmb.config.default_ip))
+    logging.info("NOTE: If you enabled full disk encryption, you should make sure that"
+                 " osk-sdl has been properly configured for your device")
 
 
 def list_flavors(args):
@@ -81,10 +62,19 @@ def list_flavors(args):
 
 def system(args):
     # Generate system image, install flasher
-    img_path = "/home/user/rootfs/" + args.device + ".img"
+    img_path = "/home/pmos/rootfs/" + args.device + ".img"
     if not os.path.exists(args.work + "/chroot_native" + img_path):
         raise RuntimeError("The system image has not been generated yet,"
                            " please run 'pmbootstrap install' first.")
+
+    # Do not flash if using fastboot & image is too large
+    method = args.flash_method or args.deviceinfo["flash_method"]
+    if method == "fastboot" and args.deviceinfo["flash_fastboot_max_size"]:
+        img_size = os.path.getsize(args.work + "/chroot_native" + img_path) / 1024**2
+        max_size = int(args.deviceinfo["flash_fastboot_max_size"])
+        if img_size > max_size:
+            raise RuntimeError("The system image is too large for fastboot"
+                               " to flash.")
 
     # Run the flasher
     logging.info("(native) flash system image")
@@ -95,26 +85,39 @@ def list_devices(args):
     pmb.flasher.run(args, "list_devices")
 
 
-def export(args):
-    # Create the export folder
-    if not os.path.exists(args.export_folder):
-        pmb.helpers.run.user(args, ["mkdir", "-p", args.export_folder])
+def sideload(args):
+    method = args.flash_method or args.deviceinfo["flash_method"]
+    cfg = pmb.config.flashers[method]
 
-    # System image note
-    img_path = "/home/user/rootfs/" + args.device + ".img"
-    if not os.path.exists(args.work + "/chroot_native" + img_path):
-        logging.info("NOTE: To export the system image, run 'pmbootstrap"
-                     " install' first (without the 'sdcard' parameter).")
+    # Install depends
+    pmb.chroot.apk.install(args, cfg["depends"])
 
-    # Rebuild the initramfs, just to make sure (see #69)
-    flavor = parse_flavor_arg(args)
-    pmb.chroot.initfs.build(args, flavor, "rootfs_" + args.device)
+    # Mount the buildroot
+    suffix = "buildroot_" + args.deviceinfo["arch"]
+    mountpoint = "/mnt/" + suffix
+    pmb.helpers.mount.bind(args, args.work + "/chroot_" + suffix,
+                           args.work + "/chroot_native/" + mountpoint)
 
-    pmb.flasher.export(args, flavor, args.export_folder)
+    # Missing recovery zip error
+    zip_path = ("/var/lib/postmarketos-android-recovery-installer/pmos-" +
+                args.device + ".zip")
+    if not os.path.exists(args.work + "/chroot_native" + mountpoint +
+                          zip_path):
+        raise RuntimeError("The recovery zip has not been generated yet,"
+                           " please run 'pmbootstrap install' with the"
+                           " '--android-recovery-zip' parameter first!")
+
+    pmb.flasher.run(args, "sideload")
 
 
 def frontend(args):
     action = args.action_flasher
+    method = args.flash_method or args.deviceinfo["flash_method"]
+
+    if method == "none" and action in ["boot", "flash_kernel", "flash_system"]:
+        logging.info("This device doesn't support any flash method.")
+        return
+
     if action in ["boot", "flash_kernel"]:
         kernel(args)
     if action == "flash_system":
@@ -123,5 +126,10 @@ def frontend(args):
         list_flavors(args)
     if action == "list_devices":
         list_devices(args)
+    if action == "sideload":
+        sideload(args)
     if action == "export":
-        export(args)
+        logging.info("WARNING: 'pmbootstrap flasher export' is deprecated and"
+                     " will be removed soon. The new syntax is 'pmbootstrap"
+                     " export'.")
+        pmb.export.frontend(args)

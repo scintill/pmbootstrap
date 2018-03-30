@@ -9,9 +9,8 @@ deviceinfo_keyboard="false"
 deviceinfo_nonfree="????"
 deviceinfo_dtb=""
 deviceinfo_modules_initfs=""
-deviceinfo_external_disk="true"
-deviceinfo_external_disk_install="true"
-deviceinfo_flash_methods="heimdall-bootimg"
+deviceinfo_external_storage="true"
+deviceinfo_flash_method="heimdall-bootimg"
 deviceinfo_arch="armhf"
 deviceinfo_generate_bootimg="true"
 
@@ -24,4 +23,3 @@ deviceinfo_flash_pagesize="2048"
 
 # Heimdall related
 deviceinfo_flash_heimdall_partition_kernel="BOOT"
-deviceinfo_weston_core_modules="xwayland.so"

@@ -1,24 +1,30 @@
+# Reference: <https://postmarketos.org/devicepkg>
 pkgname=device-samsung-maguro
 pkgver=2
-pkgrel=7
+pkgrel=20
 pkgdesc="Google Galaxy Nexus (GSM)"
 url="https://github.com/postmarketOS"
 arch="noarch"
 license="MIT"
-depends="linux-samsung-tuna mkbootimg"
-makedepends=""
+depends="postmarketos-base linux-samsung-maguro mkbootimg mesa-dri-swrast"
+makedepends="devicepkg-dev"
 install=""
-subpackages=""
+subpackages="$pkgname-nonfree-firmware:nonfree_firmware"
 source="deviceinfo"
 options="!check"
 
 build() {
-	return 0
+	devicepkg_build $startdir $pkgname
 }
 
 package() {
-	install -D -m644 "$srcdir"/deviceinfo \
-		"$pkgdir"/etc/deviceinfo
+	devicepkg_package $startdir $pkgname
 }
 
-sha512sums="48d66379b833fdef65de3cefa82eeb25c10cce156caf579d936cf089a0ce9cf1b447f40ccd89dfeb6c8919a47209f110829fa4cd4acdd1c0e02cdb188aeeb07a  deviceinfo"
+nonfree_firmware() {
+	pkgdesc="Wifi firmware"
+	depends="firmware-samsung-maguro"
+	mkdir "$subpkgdir"
+}
+
+sha512sums="47a0741af014a93e8b417b191a99d3e97b05349fb44e54b7569e03cc14fe88405077b76d0704ae71695d68498671d853aea85ba35055203600852586eccbe0b5  deviceinfo"

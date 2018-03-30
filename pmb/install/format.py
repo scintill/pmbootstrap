@@ -1,5 +1,5 @@
 """
-Copyright 2017 Oliver Smith
+Copyright 2018 Oliver Smith
 
 This file is part of pmbootstrap.
 
@@ -40,7 +40,8 @@ def format_and_mount_root(args):
         logging.info(
             " *** TYPE IN THE FULL DISK ENCRYPTION PASSWORD (TWICE!) ***")
         pmb.chroot.root(args, ["cryptsetup", "luksFormat", "--use-urandom",
-                               "--cipher", args.cipher, "-q", device], log=False)
+                               "--cipher", args.cipher, "-q", device,
+                               "--iter-time", args.iter_time], log=False)
         pmb.chroot.root(args, ["cryptsetup", "luksOpen", device,
                                "pm_crypt"], log=False)
         if not os.path.exists(args.work + "/chroot_native" + mountpoint):
@@ -48,14 +49,24 @@ def format_and_mount_root(args):
 
 
 def format_and_mount_pm_crypt(args):
+    # Block device
     if args.full_disk_encryption:
         device = "/dev/mapper/pm_crypt"
     else:
         device = "/dev/installp2"
+
+    # Format
+    if not args.rsync:
+        logging.info("(native) format " + device)
+        # Some downstream kernels don't support metadata_csum (#1364).
+        # When changing the options of mkfs.ext4, also change them in the
+        # recovery zip code (see 'grep -r mkfs\.ext4')!
+        pmb.chroot.root(args, ["mkfs.ext4", "-O", "^metadata_csum", "-F",
+                               "-q", "-L", "pmOS_root", device])
+
+    # Mount
     mountpoint = "/mnt/install"
-    logging.info("(native) format " + device + " (ext4), mount to " +
-                 mountpoint)
-    pmb.chroot.root(args, ["mkfs.ext4", "-F", "-q", "-L", "pmOS_root", device])
+    logging.info("(native) mount " + device + " to " + mountpoint)
     pmb.chroot.root(args, ["mkdir", "-p", mountpoint])
     pmb.chroot.root(args, ["mount", device, mountpoint])
 

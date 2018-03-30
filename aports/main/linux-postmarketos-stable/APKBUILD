@@ -1,0 +1,199 @@
+_flavor=postmarketos-stable
+_hash="7b6fbfd899b4133e4f789843e5967beb139ec4d2"
+_config="config-${_flavor}.${CARCH}"
+
+pkgname=linux-${_flavor}
+
+pkgver=4.15.12
+case $pkgver in
+	*.*.*)	_kernver=${pkgver%.*};;
+	*.*) _kernver=$pkgver;;
+esac
+pkgrel=0
+
+arch="x86_64 armhf aarch64"
+pkgdesc="Linux for pmOS supported chipsets (stable)"
+url="https://kernel.org/"
+depends=""
+makedepends="perl sed installkernel bash gmp-dev bc linux-headers elfutils-dev libressl-dev file"
+options="!strip !check !tracedeps"
+install=
+source="
+	https://cdn.kernel.org/pub/linux/kernel/v${pkgver%%.*}.x/linux-$_kernver.tar.xz
+	config-${_flavor}.armhf
+	config-${_flavor}.aarch64
+	config-${_flavor}.x86_64
+"
+
+if [ "${pkgver%.0}" = "$pkgver" ]; then
+	source="$source
+	https://cdn.kernel.org/pub/linux/kernel/v${pkgver%%.*}.x/patch-$pkgver.xz"
+fi
+subpackages="$pkgname-dev"
+
+license="GPL2"
+_abi_release=${pkgver}
+_carch=${CARCH}
+case "$_carch" in
+aarch64*) _carch="arm64" ;;
+arm*) _carch="arm" ;;
+ppc*) _carch="powerpc" ;;
+s390*) _carch="s390" ;;
+esac
+
+HOSTCC="${CC:-gcc}"
+HOSTCC="${HOSTCC#${CROSS_COMPILE}}"
+
+ksrcdir="$srcdir/linux-$_kernver"
+
+prepare() {
+	local _patch_failed=
+	cd "$ksrcdir"
+	if [ "$_kernver" != "$pkgver" ]; then
+		msg "Applying patch-$pkgver.xz"
+		unxz -c < "$srcdir"/patch-$pkgver.xz | patch -p1 -N
+	fi
+
+	# first apply patches in specified order
+	for i in $source; do
+		case $i in
+		*.patch)
+			msg "Applying $i..."
+			if ! patch -s -p1 -N -i "$srcdir"/$i; then
+				echo $i >>failed
+				_patch_failed=1
+			fi
+			;;
+		esac
+	done
+
+	if ! [ -z "$_patch_failed" ]; then
+		error "The following patches failed:"
+		cat failed
+		return 1
+	fi
+
+	mkdir -p "$srcdir"/build
+	cp -v "$srcdir"/$_config "$srcdir"/build/.config
+	make -C "$ksrcdir" O="$srcdir"/build ARCH="$_carch" HOSTCC="$HOSTCC" \
+		olddefconfig
+}
+
+
+
+# this is so we can do: 'abuild menuconfig' to reconfigure kernel
+menuconfig() {
+	cd "$srcdir"/build
+	make ARCH="$_carch" menuconfig
+	cp .config "$startdir"/$_config
+}
+
+build() {
+	cd "$srcdir"/build
+	unset LDFLAGS
+	make ARCH="$_carch" CC="${CC:-gcc}" \
+		KBUILD_BUILD_VERSION="$((pkgrel + 1 ))-postmarketOS" \
+		CFLAGS_MODULE=-fno-pic
+}
+
+package() {
+	cd "$srcdir/build/arch/${_carch}/boot"
+
+	if [ "$CARCH" == "aarch64" ]; then
+		install -Dm644 "$srcdir/build/arch/${_carch}/boot/Image" \
+			"$pkgdir/boot/vmlinuz-$_flavor"
+	else
+		install -Dm644 "$srcdir/build/arch/${_carch}/boot/"*zImage \
+			"$pkgdir/boot/vmlinuz-$_flavor"
+	fi
+
+	install -D "$srcdir/build/include/config/kernel.release" \
+		"$pkgdir/usr/share/kernel/$_flavor/kernel.release"
+
+	cd "$srcdir"/build
+
+	local _install
+	case "$CARCH" in
+	aarch64*|arm*)	_install="modules_install dtbs_install" ;;
+	*)		_install="modules_install" ;;
+	esac
+
+	make -j1 $_install \
+		ARCH="$_carch" \
+		INSTALL_MOD_PATH="$pkgdir" \
+		INSTALL_DTBS_PATH="$pkgdir/usr/share/dtb"
+}
+
+
+dev() {
+	# copy the only the parts that we really need for build 3rd party
+	# kernel modules and install those as /usr/src/linux-headers,
+	# simlar to what ubuntu does
+	#
+	# this way you dont need to install the 300-400 kernel sources to
+	# build a tiny kernel module
+	#
+	pkgdesc="Headers and script for third party modules for postmarketos kernel"
+	depends="gmp-dev bash perl"
+	local dir="$subpkgdir"/usr/src/linux-headers-${_abi_release}
+
+	# first we import config, run prepare to set up for building
+	# external modules, and create the scripts
+	mkdir -p "$dir"
+	cp "$srcdir"/$_config "$dir"/.config
+	make -j1 -C "$srcdir"/linux-$_kernver O="$dir" ARCH="$_carch" HOSTCC="$HOSTCC" \
+		olddefconfig prepare modules_prepare scripts
+
+	# needed for 3rd party modules
+	# https://bugzilla.kernel.org/show_bug.cgi?id=11143
+	case "$CARCH" in
+	ppc*) (cd "$dir" && make arch/powerpc/lib/crtsavres.o);;
+	esac
+
+	# remove the stuff that points to real sources. we want 3rd party
+	# modules to believe this is the soruces
+	rm "$dir"/Makefile "$dir"/source
+
+	# copy the needed stuff from real sources
+	#
+	# this is taken from ubuntu kernel build script
+	# http://kernel.ubuntu.com/git/ubuntu/ubuntu-zesty.git/tree/debian/rules.d/3-binary-indep.mk
+
+	cd "$srcdir"/linux-$_kernver
+	find . -path './include/*' -prune \
+		-o -path './scripts/*' -prune -o -type f \
+		\( -name 'Makefile*' -o -name 'Kconfig*' -o -name 'Kbuild*' -o \
+		   -name '*.sh' -o -name '*.pl' -o -name '*.lds' \) \
+		-print | cpio -pdm "$dir"
+	cp -a scripts include "$dir"
+	find $(find arch -name include -type d -print) -type f \
+		| cpio -pdm "$dir"
+
+	install -Dm644 "$srcdir"/build/Module.symvers \
+		"$dir"/Module.symvers
+
+	mkdir -p "$subpkgdir"/lib/modules/${_abi_release}
+	ln -sf /usr/src/linux-headers-${_abi_release} \
+		"$subpkgdir"/lib/modules/${_abi_release}/build
+
+	# cross-compiling: delete binaries with host arch and replace them with
+	# symlinks to binaries with the target arch (packaged in kernel-scripts)
+	if [ -n "$CROSS_COMPILE" ]; then
+		msg "Symlinking binary scripts..."
+		depends="$depends kernel-scripts"
+		cd "$dir/scripts"
+		local i
+		for i in $(find . -type f); do
+			local type="$(file -b --mime-type "$i")"
+			[ "$type" != "application/x-sharedlib" ] && continue
+			local native="/usr/bin/kernel-scripts/$(echo "$i" | cut -d '/' -f 2-)"
+			ln -svf "$native" "$i"
+		done
+	fi
+}
+
+sha512sums="c00d92659df815a53dcac7dde145b742b1f20867d380c07cb09ddb3295d6ff10f8931b21ef0b09d7156923a3957b39d74d87c883300173b2e20690d2b4ec35ea  linux-4.15.tar.xz
+7e4485a97ca37db7d071ebafa29450c2f307b51d48dac5c9f947d2f33c3194b1263f265031bbb502ac1d94039f0779d9528ef24491fa83260b9b78fcfe3c6c46  config-postmarketos-stable.armhf
+5e3c7d569b6a246ed5873afb088dbcd533cb1074f13a030292af41214a704ea08d9c5505b113429ded57849271c121bfef1b7771cb3051d2ac46808da13afa45  config-postmarketos-stable.aarch64
+9b7ae9e35731675db311aea9fe45b0e1ecc97cc40edc1ed7b179945e49d5656f26706c7fbf76a5308b0f480831adcfcff2777cb024c214c2e7a53b5ef0a15cd0  config-postmarketos-stable.x86_64
+5f6f43a8ac40346a88c27886e1aab1266efc7de0f1994c7bee42e8501697123c3f7217be2368c2addd2d63ab357bc426d9eab568252659341c0c9327b9179ff1  patch-4.15.12.xz"

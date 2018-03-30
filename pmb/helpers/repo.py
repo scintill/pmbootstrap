@@ -1,5 +1,5 @@
 """
-Copyright 2017 Oliver Smith
+Copyright 2018 Oliver Smith
 
 This file is part of pmbootstrap.
 
@@ -16,55 +16,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with pmbootstrap.  If not, see <http://www.gnu.org/licenses/>.
 """
-import glob
 import os
 import hashlib
-
-
-def files(args):
-    """
-    Returns all files (apk/buildinfo) with their last modification timestamp
-    inside the package repository, sorted by architecture.
-
-    :returns: {"x86_64": {"first.apk": last_modified_timestamp, ... }, ... }
-    """
-    ret = {}
-    for arch_folder in glob.glob(args.work + "/packages/*"):
-        arch = os.path.basename(arch_folder)
-        ret[arch] = {}
-        for file in glob.glob(arch_folder + "/*"):
-            basename = os.path.basename(file)
-            ret[arch][basename] = os.path.getmtime(file)
-    return ret
-
-
-def diff(args, files_a, files_b=None):
-    """
-    Returns a list of files, that have been added or modified inside the
-    package repository.
-
-    :param files_a: return value from pmb.helpers.repo.files()
-    :param files_b: defaults to creating a new list
-    :returns: ["x86_64/APKINDEX.tar.gz", "x86_64/package.apk",
-               "x86_64/package.buildinfo", ...]
-    """
-    if not files_b:
-        files_b = files(args)
-
-    ret = []
-    for arch in files_b.keys():
-        for file, timestamp in files_b[arch].items():
-            add = False
-            if arch not in files_a:
-                add = True
-            elif file not in files_a[arch]:
-                add = True
-            elif timestamp != files_a[arch][file]:
-                add = True
-            if add:
-                ret.append(arch + "/" + file)
-
-    return sorted(ret)
+import logging
+import pmb.helpers.http
+import pmb.helpers.run
 
 
 def hash(url, length=8):
@@ -101,7 +57,7 @@ def urls(args, user_repository=True, postmarketos_mirror=True):
     ret = []
     # Local user repository (for packages compiled with pmbootstrap)
     if user_repository:
-        ret.append("/home/user/packages/user")
+        ret.append("/mnt/pmbootstrap-packages")
 
     # Upstream postmarketOS binary repository
     if postmarketos_mirror and args.mirror_postmarketos:
@@ -148,3 +104,92 @@ def apkindex_files(args, arch=None):
                    hash(url) + ".tar.gz")
 
     return ret
+
+
+def update(args, arch=None, force=False, existing_only=False):
+    """
+    Download the APKINDEX files for all URLs depending on the architectures.
+
+    :param arch: * one Alpine architecture name ("x86_64", "armhf", ...)
+                 * None for all architectures
+    :param force: even update when the APKINDEX file is fairly recent
+    :param existing_only: only update the APKBUILD files that already exist,
+                          this is used by "pmbootstrap update"
+
+    :returns: True when files have been downloaded, False otherwise
+    """
+    # Architectures and retention time
+    architectures = [arch] if arch else pmb.config.build_device_architectures
+    retention_hours = pmb.config.apkindex_retention_time
+    retention_seconds = retention_hours * 3600
+
+    # Find outdated APKINDEX files. Formats:
+    # outdated: {URL: apkindex_path, ... }
+    # outdated_arches: ["armhf", "x86_64", ... ]
+    outdated = {}
+    outdated_arches = []
+    for url in urls(args, False):
+        for arch in architectures:
+            # APKINDEX file name from the URL
+            url_full = url + "/" + arch + "/APKINDEX.tar.gz"
+            cache_apk_outside = args.work + "/cache_apk_" + arch
+            apkindex = cache_apk_outside + "/APKINDEX." + hash(url) + ".tar.gz"
+
+            # Find update reason, possibly skip non-existing files
+            reason = None
+            if not os.path.exists(apkindex):
+                if existing_only:
+                    continue
+                reason = "file does not exist yet"
+            elif force:
+                reason = "forced update"
+            elif pmb.helpers.file.is_older_than(apkindex, retention_seconds):
+                reason = "older than " + str(retention_hours) + "h"
+            if not reason:
+                continue
+
+            # Update outdated and outdated_arches
+            logging.debug("APKINDEX outdated (" + reason + "): " + url_full)
+            outdated[url_full] = apkindex
+            if arch not in outdated_arches:
+                outdated_arches.append(arch)
+
+    # Bail out or show log message
+    if not len(outdated):
+        return False
+    logging.info("Update package index for " + ", ".join(outdated_arches) +
+                 " (" + str(len(outdated)) + " file(s))")
+
+    # Download and move to right location
+    for url, target in outdated.items():
+        temp = pmb.helpers.http.download(args, url, "APKINDEX", False,
+                                         logging.DEBUG)
+        target_folder = os.path.dirname(target)
+        if not os.path.exists(target_folder):
+            pmb.helpers.run.root(args, ["mkdir", "-p", target_folder])
+        pmb.helpers.run.root(args, ["cp", temp, target])
+
+    return True
+
+
+def alpine_apkindex_path(args, repo="main", arch=None):
+    """
+    Get the path to a specific Alpine APKINDEX file on disk and download it if
+    necessary.
+
+    :param repo: Alpine repository name (e.g. "main")
+    :param arch: Alpine architecture (e.g. "armhf"), defaults to native arch.
+    :returns: full path to the APKINDEX file
+    """
+    # Repo sanity check
+    if repo not in ["main", "community", "testing", "non-free"]:
+        raise RuntimeError("Invalid Alpine repository: " + repo)
+
+    # Download the file
+    update(args, arch)
+
+    # Find it on disk
+    arch = arch or args.arch_native
+    repo_link = args.mirror_alpine + args.alpine_version + "/" + repo
+    cache_folder = args.work + "/cache_apk_" + arch
+    return cache_folder + "/APKINDEX." + hash(repo_link) + ".tar.gz"

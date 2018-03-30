@@ -1,5 +1,5 @@
 """
-Copyright 2017 Oliver Smith
+Copyright 2018 Oliver Smith
 
 This file is part of pmbootstrap.
 
@@ -20,79 +20,152 @@ import logging
 import pmb.chroot
 import pmb.chroot.apk
 import pmb.parse.apkindex
+import pmb.parse.arch
 
 
-def apkindex(args, pkgname, arch):
+def package_from_aports(args, pkgname_depend):
     """
-    Non-recursively get the dependencies of one package in any APKINDEX.
+    :returns: None when there is no aport, or a dict with the keys pkgname,
+              depends, version. The version is the combined pkgver and pkgrel.
     """
-    index_data = pmb.parse.apkindex.read_any_index(args, pkgname, arch)
-    if index_data:
-        return index_data["depends"]
-    else:
+    # Get the aport
+    aport = pmb.build.find_aport(args, pkgname_depend, False)
+    if not aport:
         return None
 
+    # Parse its version
+    apkbuild = pmb.parse.apkbuild(args, aport + "/APKBUILD")
+    pkgname = apkbuild["pkgname"]
+    version = apkbuild["pkgver"] + "-r" + apkbuild["pkgrel"]
 
-def recurse_error_message(pkgname, in_aports, in_apkindexes):
-    ret = "Could not find package '" + pkgname + "'"
-    if in_aports:
-        ret += " aport"
-        if in_apkindexes:
-            ret += " and could not find it"
-    if in_apkindexes:
-        ret += " in any APKINDEX"
-    return ret
+    # Return the dict
+    logging.verbose(pkgname_depend + ": provided by: " + pkgname + "-" +
+                    version + " in " + aport)
+    return {"pkgname": pkgname,
+            "depends": apkbuild["depends"],
+            "version": version}
 
 
-def recurse(args, pkgnames, arch=None, in_apkindexes=True, in_aports=True,
-            strict=False):
+def package_provider(args, pkgname, pkgnames_install, suffix="native"):
+    """
+    :param pkgnames_install: packages to be installed
+    :returns: a block from the apkindex: {"pkgname": "...", ...}
+              or None (no provider found)
+    """
+    # Get all providers
+    arch = pmb.parse.arch.from_chroot_suffix(args, suffix)
+    providers = pmb.parse.apkindex.providers(args, pkgname, arch, False)
+
+    # 0. No provider
+    if len(providers) == 0:
+        return None
+
+    # 1. Only one provider
+    logging.verbose(pkgname + ": provided by: " + ", ".join(providers))
+    if len(providers) == 1:
+        return list(providers.values())[0]
+
+    # 2. Provider with the same package name
+    if pkgname in providers:
+        logging.verbose(pkgname + ": choosing package of the same name as"
+                        " provider")
+        return providers[pkgname]
+
+    # 3. Pick a package that will be installed anyway
+    for provider_pkgname, provider in providers.items():
+        if provider_pkgname in pkgnames_install:
+            logging.verbose(pkgname + ": choosing provider '" +
+                            provider_pkgname + "', because it will be"
+                            " installed anyway")
+            return provider
+
+    # 4. Pick a package that is already installed
+    installed = pmb.chroot.apk.installed(args, suffix)
+    for provider_pkgname, provider in providers.items():
+        if provider_pkgname in installed:
+            logging.verbose(pkgname + ": choosing provider '" +
+                            provider_pkgname + "', because it is installed in"
+                            " the '" + suffix + "' chroot already")
+            return provider
+
+    # 5. Pick the first one
+    provider_pkgname = list(providers.keys())[0]
+    logging.debug(pkgname + " has multiple providers (" +
+                  ", ".join(providers) + "), picked: " + provider_pkgname)
+    return providers[provider_pkgname]
+
+
+def package_from_index(args, pkgname_depend, pkgnames_install, package_aport,
+                       suffix="native"):
+    """
+    :returns: None when there is no aport and no binary package, or a dict with
+              the keys pkgname, depends, version from either the aport or the
+              binary package provider.
+    """
+    # No binary package
+    provider = package_provider(args, pkgname_depend, pkgnames_install, suffix)
+    if not provider:
+        return package_aport
+
+    # Binary package outdated
+    if (package_aport and pmb.parse.version.compare(package_aport["version"],
+                                                    provider["version"]) == 1):
+        logging.verbose(pkgname_depend + ": binary package is outdated")
+        return package_aport
+
+    # Binary up to date (#893: overrides aport, so we have sonames in depends)
+    if package_aport:
+        logging.verbose(pkgname_depend + ": binary package is"
+                        " up to date, using binary dependencies"
+                        " instead of the ones from the aport")
+    return provider
+
+
+def recurse(args, pkgnames, suffix="native"):
     """
     Find all dependencies of the given pkgnames.
 
-    :param in_apkindexes: look through all APKINDEX files (with the specified arch)
-    :param in_aports: look through the aports folder
-    :param strict: raise RuntimeError, when a dependency can not be found.
+    :param suffix: the chroot suffix to resolve dependencies for. If a package
+                   has multiple providers, we look at the installed packages in
+                   the chroot to make a decision (see package_provider()).
+    :returns: list of pkgnames: consists of the initial pkgnames plus all
+              depends
     """
-    logging.debug("Calculate depends of packages " + str(pkgnames) +
-                  ", arch: " + arch)
-    logging.verbose("Search in_aports: " + str(in_aports) + ", in_apkindexes: " +
-                    str(in_apkindexes))
+    logging.debug("(" + suffix + ") calculate depends of " +
+                  ", ".join(pkgnames) + " (pmbootstrap -v for details)")
 
-    # Sanity check
-    if not apkindex and not in_aports:
-        raise RuntimeError("Set at least one of apkindex or aports to True.")
-
+    # Iterate over todo-list until is is empty
     todo = list(pkgnames)
     ret = []
     while len(todo):
         # Skip already passed entries
-        pkgname = todo.pop(0)
-        if pkgname in ret:
+        pkgname_depend = todo.pop(0)
+        if pkgname_depend in ret:
             continue
 
-        # Get depends
-        logging.verbose("Getting depends of single package: " + pkgname)
-        depends = None
-        if in_aports:
-            aport = pmb.build.find_aport(args, pkgname, False)
-            if aport:
-                logging.verbose("-> Found aport: " + aport)
-                apkbuild = pmb.parse.apkbuild(args, aport + "/APKBUILD")
-                depends = apkbuild["depends"]
-        if depends is None and in_apkindexes:
-            logging.verbose("-> Search through APKINDEX files")
-            depends = apkindex(args, pkgname, arch)
-        if depends is None and strict:
-            raise RuntimeError(
-                recurse_error_message(
-                    pkgname,
-                    in_aports,
-                    in_apkindexes))
+        # Get depends and pkgname from aports
+        pkgnames_install = list(ret) + todo
+        package = package_from_aports(args, pkgname_depend)
+        package = package_from_index(args, pkgname_depend, pkgnames_install,
+                                     package, suffix)
 
-        # Append to todo/ret
-        logging.verbose("-> Depends: " + str(depends))
-        if depends:
-            todo += depends
-        ret.append(pkgname)
+        # Nothing found
+        if not package:
+            logging.info("NOTE: Run 'pmbootstrap pkgrel_bump --auto' to mark"
+                         " packages with outdated dependencies for rebuild."
+                         " This will most likely fix this issue (soname"
+                         " bump?).")
+            raise RuntimeError("Could not find package '" + pkgname_depend +
+                               "' in any aports folder or APKINDEX.")
 
+        # Append to todo/ret (unless it is a duplicate)
+        pkgname = package["pkgname"]
+        if pkgname in ret:
+            logging.verbose(pkgname + ": already found")
+        else:
+            depends = package["depends"]
+            logging.verbose(pkgname + ": depends on: " + ",".join(depends))
+            if depends:
+                todo += depends
+            ret.append(pkgname)
     return ret

@@ -1,5 +1,5 @@
 """
-Copyright 2017 Oliver Smith
+Copyright 2018 Oliver Smith
 
 This file is part of pmbootstrap.
 
@@ -21,7 +21,7 @@ import logging
 
 
 def save(args, cfg):
-    logging.debug("save config: " + args.config)
+    logging.debug("Save config: " + args.config)
     os.makedirs(os.path.dirname(args.config), 0o700, True)
     with open(args.config, "w") as handle:
         cfg.write(handle)

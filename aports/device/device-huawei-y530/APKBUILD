@@ -1,0 +1,32 @@
+pkgname=device-huawei-y530
+pkgver=1
+pkgrel=10
+pkgdesc="Huawei Ascend Y530"
+url="https://github.com/postmarketOS"
+arch="noarch"
+license="MIT"
+depends="postmarketos-base linux-huawei-y530 mkbootimg mesa-dri-swrast"
+makedepends=""
+install=""
+subpackages="$pkgname-nonfree-firmware:nonfree_firmware"
+source="
+	deviceinfo
+	90-touchscreen-dev.rules
+"
+options="!check"
+
+package() {
+	install -D -m644 "$srcdir"/deviceinfo \
+		"$pkgdir"/etc/deviceinfo
+	install -D -m644 "$srcdir"/90-touchscreen-dev.rules \
+		"$pkgdir"/etc/udev/rules.d/90-touchscreen-dev.rules
+}
+
+nonfree_firmware() {
+	pkgdesc="Wifi firmware"
+	depends="firmware-huawei-y530"
+	mkdir "$subpkgdir"
+}
+
+sha512sums="cbe2c1d166f202923462ffe254d16d335eb0c7d16bd2c2aabb3aa8947278ce276bbe440aa03fc5098f28fb029750c5869ef280b514e36268ef2b8c0b5022fa78  deviceinfo
+b2ebcd94e54b474d5a0d03f25af0d152583cddbb8ae8a70b72d65e96c9114a11fd535ffc964b23a0852fd541198c940fe6e867dafb6e6a8a12cb6fa5d1538d45  90-touchscreen-dev.rules"

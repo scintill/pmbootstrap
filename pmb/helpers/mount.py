@@ -1,5 +1,5 @@
 """
-Copyright 2017 Oliver Smith
+Copyright 2018 Oliver Smith
 
 This file is part of pmbootstrap.
 
@@ -36,12 +36,17 @@ def ismount(folder):
     return False
 
 
-def bind(args, source, destination, create_folders=True):
+def bind(args, source, destination, create_folders=True, umount=False):
     """
     Mount --bind a folder and create necessary directory structure.
+    :param umount: when destination is already a mount point, umount it first.
     """
+    # Check/umount destination
     if ismount(destination):
-        return
+        if umount:
+            umount_all(args, destination)
+        else:
+            return
 
     # Check/create folders
     for path in [source, destination]:
@@ -93,8 +98,13 @@ def umount_all_list(prefix, source="/proc/mounts"):
             if len(words) < 2:
                 raise RuntimeError("Failed to parse line in " + source + ": " +
                                    line)
-            if words[1].startswith(prefix):
-                ret.append(words[1])
+            mountpoint = words[1]
+            if mountpoint.startswith(prefix):
+                # Remove "\040(deleted)" suffix (#545)
+                deleted_str = r"\040(deleted)"
+                if mountpoint.endswith(deleted_str):
+                    mountpoint = mountpoint[:-len(deleted_str)]
+                ret.append(mountpoint)
     ret.sort(reverse=True)
     return ret
 

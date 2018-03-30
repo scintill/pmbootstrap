@@ -1,26 +1,33 @@
 pkgname=device-qemu-amd64
 pkgver=1
-pkgrel=2
+pkgrel=16
 pkgdesc="Simulated device in qemu with an x86 platform"
 url="https://github.com/postmarketOS"
 arch="noarch"
 license="MIT"
-depends="linux-postmarketos"
+# NOTE: 'pmbootstrap init' allows you to choose the mesa-dri-* package
+depends="postmarketos-base linux-postmarketos-lts"
 makedepends=""
-subpackages=""
-source="deviceinfo interfaces"
+subpackages="$pkgname-x11 $pkgname-weston"
+source="deviceinfo weston.ini"
 options="!check"
-
-build() {
-	return 0
-}
 
 package() {
 	install -D -m644 "$srcdir"/deviceinfo \
 		"$pkgdir"/etc/deviceinfo
-	install -D -m644 "$srcdir"/interfaces \
-		"$pkgdir"/etc/network/interfaces
 }
 
-sha512sums="b73fe8c04f482fe63b31b80ad901d8e5349fc713e99137a273b0cfbae25e4c7d23bff8e5aac582ab4a3b87d0039aa166dd5b9827c1afc0551cef800916749697  deviceinfo
-d510ca304066840aa5e6c4fc71ded1b7e83012c93837fa39e37bdb873b3636230030d56f7aa50c93fc688f563cb4cb96c02ad333bbc45a400c1ebee1792a9dd4  interfaces"
+x11() {
+	install_if="$pkgname xorg-server"
+	depends="xf86-video-qxl"
+	mkdir "$subpkgdir"
+}
+
+weston() {
+	install_if="$pkgname weston"
+	install -Dm644 "$srcdir"/weston.ini \
+		"$subpkgdir"/etc/xdg/weston/weston.ini
+}
+
+sha512sums="eb12ff5fe6fe592661facd3f8c910e00752e963b2092f4d4062c4af67972249233d20d641355e03de17ab537f42617140ccb9c296c2dcfb6077785fa9eeb25fd  deviceinfo
+df0fe900693e5f176076c59f5379e56aaa96c3df16a4120448f15b71f530170730b43e5fe32733c40c118a00ca3581043231a062a8a1eb0a930bfbfbb6c52a47  weston.ini"

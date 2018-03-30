@@ -1,4 +1,6 @@
 #!/bin/sh
+# shellcheck disable=SC1091
+. /etc/deviceinfo
 . ./init_functions.sh
 
 export PATH=/usr/bin:/bin:/usr/sbin:/sbin
@@ -8,9 +10,16 @@ export PATH=/usr/bin:/bin:/usr/sbin:/sbin
 # Mount everything, set up logging, modules, mdev
 mount_proc_sys_dev
 setup_log
-[ -d /lib/modules ] && modprobe -a @MODULES@
+# shellcheck disable=SC2154,SC2086
+[ -d /lib/modules ] && modprobe -a ${deviceinfo_modules_initfs} ext4
 setup_mdev
 mount_subpartitions
+
+# Start msm-fb-refresher workaround for qualcomm devices
+start_msm_refresher
+
+# Fix for framebuffer drivers, which do not have a default mode
+set_framebuffer_mode
 
 # Hooks
 for hook in /etc/postmarketos-mkinitfs/hooks/*.sh; do
@@ -21,13 +30,14 @@ done
 show_splash /splash-loading.ppm.gz
 
 # Always run dhcp daemon/usb networking for now (later this should only
-# be enabled, when having the usb-shell hook installed for debugging,
+# be enabled, when having the debug-shell hook installed for debugging,
 # or get activated after the initramfs is done with an OpenRC service).
 setup_usb_network
 start_udhcpd
 
 mount_boot_partition
 extract_initramfs_extra @INITRAMFS_EXTRA@
+start_charging_mode
 wait_root_partition
 resize_root_partition
 unlock_root_partition
@@ -35,7 +45,7 @@ resize_root_filesystem
 mount_root_partition
 
 # Switch root
-killall telnetd mdev 2>/dev/null
+killall telnetd mdev msm-fb-refresher 2>/dev/null
 umount /boot
 umount /proc
 umount /sys
@@ -46,6 +56,6 @@ umount /dev
 exec switch_root /sysroot /sbin/init
 
 echo "ERROR: switch_root failed!"
-echo "Looping forever. Install and use the usb-shell hook to debug this."
-echo "For more information, see <https://postmarketos.org/usbhook>"
+echo "Looping forever. Install and use the debug-shell hook to debug this."
+echo "For more information, see <https://postmarketos.org/debug-shell>"
 loop_forever
