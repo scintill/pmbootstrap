@@ -1,7 +1,7 @@
 _hash="c5cee8cc9e9b13784272550ab0938175cec1cdb5"
 pkgname=openiboot
 pkgver=0.3
-pkgrel=1
+pkgrel=2
 pkgdesc="Open bootloader for Apple devices"
 url="https://github.com/iDroid-Project/openiBoot"
 arch="armhf"
@@ -20,6 +20,7 @@ source="
     0002-add-a-no-op-raise-stdlib-function.patch
     0003-remove-prebuilt-libxpwn-assume-one-in-system-path.patch
     0004-disable-O2-it-makes-the-build-not-boot-on-iPad.patch
+    0005-remove-FTL-YAFTL-from-A4-it-panics-on-my-iPad.patch
 "
 options="!check !strip !archcheck"
 
@@ -59,4 +60,5 @@ sha512sums="dbd35f0dc158757c174f68f15fe779397aadc6b238e0385ebd85ea16bec361fdb7b8
 ec92c74b7ed87bb764547e0d107afd8009ee73bac6e03aaacfe1318610904bd993a2f5205efbfc40ba232a789df2a6971d1128b9003f5d3546f55fcb36347fa3  0001-fix-linking.patch
 1d682c2f0e46a14a6cc9ff8ff7b96e563747fc321fc0720d18947f66c477cadaed64df04233f62f3d9839c2fdacc3f6b191dd37844d2983606ca1ef031007ac9  0002-add-a-no-op-raise-stdlib-function.patch
 4a805e971e759faa6d976ff5431fc4610b8edddf028e0759d4ae74fafd99bc33b8b971d2ec63219424eafb1d6f45695679dc3200040e54a6ea19a2f059a19110  0003-remove-prebuilt-libxpwn-assume-one-in-system-path.patch
-382b2a6167784afb1116028fb22faf5fb4804dc464bef3cffa0ba9443f6089f0fa99489c71b8467c6efa8826c2cc35fa824dbec308ae09a42cad559defebe26a  0004-disable-O2-it-makes-the-build-not-boot-on-iPad.patch"
+382b2a6167784afb1116028fb22faf5fb4804dc464bef3cffa0ba9443f6089f0fa99489c71b8467c6efa8826c2cc35fa824dbec308ae09a42cad559defebe26a  0004-disable-O2-it-makes-the-build-not-boot-on-iPad.patch
+6fd6361a61a398962fc3222b64b81e49ae202315195833c1d4224dfbaf406714f1779883708316e1abba76a272fe152d9cd08ba02be4a69f74837be8aa94b698  0005-remove-FTL-YAFTL-from-A4-it-panics-on-my-iPad.patch"

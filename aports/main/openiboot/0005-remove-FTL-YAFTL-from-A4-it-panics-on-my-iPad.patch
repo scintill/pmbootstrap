@@ -1,0 +1,45 @@
+From 82279c66fe06a853203e2c04d82226ebbf73a13f Mon Sep 17 00:00:00 2001
+From: Joey Hewitt <joey@joeyhewitt.com>
+Date: Fri, 30 Mar 2018 16:44:13 -0600
+Subject: [PATCH 5/5] remove FTL-YAFTL from A4 (it panics on my iPad)
+
+---
+ plat-a4/SConscript | 1 -
+ plat-a4/h2fmi.c    | 5 +++++
+ 2 files changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/plat-a4/SConscript b/plat-a4/SConscript
+index 935691f..1ece188 100644
+--- a/plat-a4/SConscript
++++ b/plat-a4/SConscript
+@@ -9,7 +9,6 @@ env.AddModules([
+ 	"usb-synopsys",
+ 	"vfl-vfl",
+ 	"vfl-vsvfl",
+-	"ftl-yaftl",
+ 	])
+ 
+ plat_a4_src = arch_arm_src + base_src + env.Localize([
+diff --git a/plat-a4/h2fmi.c b/plat-a4/h2fmi.c
+index 4a70159..8b5cb7b 100644
+--- a/plat-a4/h2fmi.c
++++ b/plat-a4/h2fmi.c
+@@ -3427,10 +3427,15 @@ COMMAND("ftl_write", "FTL write single page", cmd_ftl_write);
+ extern void YAFTL_Flush();
+ static error_t cmd_ftl_flush(int argc, char** argv)
+ {
++#ifdef CONFIG_FTL_YAFTL
+ 	YAFTL_Flush();
+ 	bufferPrintf("ftl: Command completed.\r\n");
+ 
+ 	return SUCCESS;
++#else
++	bufferPrintf("ftl: No FTL compiled.\r\n");
++	return ENOENT;
++#endif
+ }
+ COMMAND("ftl_flush", "FTL flush", cmd_ftl_flush);
+ 
+-- 
+2.7.4
+
