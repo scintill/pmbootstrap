@@ -1,0 +1,26 @@
+_hash="740cdbe6a7b4ab5b96dcce5c5bb71fd31eb6703a"
+pkgname=oibc
+pkgver=2012.0.0
+pkgrel=0
+pkgdesc="OpeniBoot Console"
+url="https://github.com/iDroid-Project/OiBC"
+arch="all"
+license="GPL-3.0-or-later"
+depends="readline"
+makedepends="libusb-dev readline-dev"
+subpackages=""
+source="
+    $pkgname.tar.gz::https://github.com/iDroid-Project/OiBC/archive/${_hash}.tar.gz
+"
+options="!check"
+
+builddir="$srcdir"/OiBC-${_hash}
+build() {
+	make -C "$builddir"
+}
+
+package() {
+	install -Dm 755 "$builddir/oibc" "$pkgdir"/usr/bin/oibc
+}
+
+sha512sums="68c5fa67ea9c1c6f01e3199b800bbca6343fd6316394c5245adf1e71e514e810084482dd3dd5043e1ca6bb864a585c37c8754543575aa7de8c40225cb6bbce1e  oibc.tar.gz"
