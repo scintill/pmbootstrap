@@ -1,0 +1,32 @@
+_hash="af0d999f93b5da2f07499690a7aa41f70bbcb053"
+pkgname=syringe
+pkgver=2011.0.0
+pkgrel=0
+pkgdesc="iDevice Exploit Injector"
+url="https://github.com/Chronic-Dev/syringe"
+arch="all"
+license="GPL-3.0-or-later"
+depends=""
+makedepends="curl-dev libusb-dev gcc-armhf vim zlib-dev"
+# vim for xxd
+subpackages=""
+source="
+    $pkgname.tar.gz::https://github.com/Chronic-Dev/syringe/archive/${_hash}.tar.gz
+"
+options="!check"
+
+builddir="$srcdir"/syringe-${_hash}
+build() {
+    cd "$builddir"
+
+# buggy makefiles probably preventing a parallel build from working
+	make -j1 CROSS=armv6-alpine-linux-muslgnueabihf-
+}
+
+package() {
+	for f in loadibec injectpois0n tetheredboot; do
+		install -Dm 755 "$builddir/utilities/$f" "$pkgdir"/usr/bin/$f
+	done
+}
+
+sha512sums="b94a1258d07fe45e6bfa4f96188c9e08c9d353633e3fab6361cf4c858b2d9511f94b6dc3784b1f1ce0087a8658bb4fd079b7430efb3c465d9090cdaed6be3659  syringe.tar.gz"
