@@ -79,11 +79,12 @@ diff -rN -U3 a/plugins/udevng.c b/plugins/udevng.c
  
  	DBG("qmi=%s net=%s mdm=%s gps=%s diag=%s", qmi, net, mdm, gps, diag);
  
-@@ -1708,6 +1712,7 @@
+@@ -1708,6 +1712,8 @@
  		return;
  
  	udev_enumerate_add_match_subsystem(enumerate, "tty");
 +	udev_enumerate_add_match_subsystem(enumerate, "smdpkt");
++	udev_enumerate_add_match_subsystem(enumerate, "rpmsg");
  	udev_enumerate_add_match_subsystem(enumerate, "usb");
  	udev_enumerate_add_match_subsystem(enumerate, "usbmisc");
  	udev_enumerate_add_match_subsystem(enumerate, "net");
