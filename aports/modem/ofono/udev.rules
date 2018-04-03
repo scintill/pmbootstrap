@@ -1,0 +1,7 @@
+KERNEL!="smdcntl0", GOTO="ofono_end"
+SYMLINK!="smdcntl0", GOTO="ofono_end"
+
+SUBSYSTEM=="smdpkt",   ENV{OFONO_DRIVER}="gobi"
+SUBSYSTEM=="rpmsg",    ENV{OFONO_DRIVER}="gobi"
+
+LABEL="ofono_end"
