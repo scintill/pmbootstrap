@@ -1,14 +1,14 @@
 # Contributor: Bart Ribbers <bribbers@disroot.org>
 # Maintainer: Bart Ribbers <bribbers@disroot.org>
 pkgname=kdelibs4support
-pkgver=5.44.0
-pkgrel=0
+pkgver=5.45.0
+pkgrel=1
 pkgdesc='Porting aid from KDELibs4'
 arch="all"
 url='https://community.kde.org/Frameworks'
 license="LGPL-2.1"
 depends="ca-certificates"
-depends_dev="kdesignerplugin kunitconversion-dev kemoticons-dev kded-dev kparts-dev qt5-qtsvg-dev qt5-x11extras-dev
+depends_dev="kdesignerplugin kunitconversion-dev kemoticons-dev kded-dev kparts-dev qt5-qtsvg-dev qt5-qtx11extras-dev
 			kcompletion-dev kconfig-dev kconfigwidgets-dev kauth-dev kcodecs-dev kwidgetsaddons-dev kded
 			kcrash-dev kglobalaccel-dev kservice-dev kguiaddons-dev ki18n-dev kiconthemes-dev kbookmarks-dev
 			kitemviews-dev kjobwidgets-dev solid-dev kxmlgui-dev knotifications-dev ktextwidgets-dev sonnet-dev
@@ -42,4 +42,4 @@ package() {
 	rm -f "$pkgdir"/usr/share/kf5/kssl/ca-bundle.crt
 	ln -sf /etc/ssl/certs/ca-certificates.crt "${pkgdir}"/usr/share/kf5/kssl/ca-bundle.crt
 }
-sha512sums="57f48f9221f3cef5b6346a223086ce528117f00bd042c3c207c4bea8f5ce7ebf10ea6f11da88bab25539e84b778a37c35d053a867b8f973e68adbe951bb73337  kdelibs4support-5.44.0.tar.xz"
+sha512sums="94ceeaef10e4808df5077224fb593f98d6b42d2087d90fd163841b67b97a6e14238f9a65ab8609f616122c4217bb8d494cbbc501373602827abdf7271ede0802  kdelibs4support-5.45.0.tar.xz"

@@ -46,9 +46,9 @@ def mount_device_rootfs(args, suffix="native"):
 
 def get_subpartitions_size(args):
     """
-    Calculate the size of the whole image and boot subpartition.
+    Calculate the size of the boot and root subpartition.
 
-    :returns: (full, boot) the size of the full image and boot
+    :returns: (boot, root) the size of the boot and root
               partition as integer in bytes
     """
     # Calculate required sizes first
@@ -66,7 +66,7 @@ def get_subpartitions_size(args):
     full *= 1.20
     full += 50 * 1024 * 1024
     boot += 15 * 1024 * 1024
-    return (full, boot)
+    return (boot, full - boot)
 
 
 def get_nonfree_packages(args, device):
@@ -184,7 +184,8 @@ def set_user(args):
     if not pmb.chroot.user_exists(args, args.user, suffix):
         pmb.chroot.root(args, ["adduser", "-D", "-u", "1000", args.user],
                         suffix)
-        pmb.chroot.root(args, ["addgroup", args.user, "wheel"], suffix)
+        for group in pmb.config.install_user_groups:
+            pmb.chroot.root(args, ["addgroup", args.user, group], suffix)
 
 
 def setup_login(args):
@@ -208,19 +209,16 @@ def setup_login(args):
     pmb.chroot.root(args, ["passwd", "-l", "root"], suffix)
 
 
-def copy_ssh_key(args):
+def copy_ssh_keys(args):
     """
-    Offer to copy user's SSH public keys to the device if they exist
+    If requested, copy user's SSH public keys to the device if they exist
     """
+    if not args.ssh_keys:
+        return
     keys = []
-    for key in ["RSA", "Ed25519"]:
-        user_ssh_pubkey = os.path.expanduser("~/.ssh/id_" + key.lower() + ".pub")
-        if not os.path.exists(user_ssh_pubkey):
-            continue
-        if pmb.helpers.cli.confirm(
-                args, "Would you like to copy your " + key + " SSH public key to the device?"):
-            with open(user_ssh_pubkey, "r") as infile:
-                keys += infile.readlines()
+    for key in glob.glob(os.path.expanduser("~/.ssh/id_*.pub")):
+        with open(key, "r") as infile:
+            keys += infile.readlines()
 
     if not len(keys):
         logging.info("NOTE: Public SSH keys not found. Since no SSH keys " +
@@ -286,11 +284,13 @@ def install_system_image(args):
     # Partition and fill image/sdcard
     logging.info("*** (3/5) PREPARE INSTALL BLOCKDEVICE ***")
     pmb.chroot.shutdown(args, True)
-    (size_image, size_boot) = get_subpartitions_size(args)
+    (size_boot, size_root) = get_subpartitions_size(args)
     if not args.rsync:
-        pmb.install.blockdevice.create(args, size_image)
-        pmb.install.partition(args, size_boot)
-    pmb.install.partitions_mount(args)
+        pmb.install.blockdevice.create(args, size_boot, size_root)
+        if not args.split:
+            pmb.install.partition(args, size_boot)
+    if not args.split:
+        pmb.install.partitions_mount(args)
 
     if args.full_disk_encryption:
         logging.info("WARNING: Full disk encryption is enabled!")
@@ -307,13 +307,11 @@ def install_system_image(args):
     copy_files_from_chroot(args)
     create_home_from_skel(args)
     configure_apk(args)
-
-    # If user has a ssh pubkey, offer to copy it to device
-    copy_ssh_key(args)
+    copy_ssh_keys(args)
     pmb.chroot.shutdown(args, True)
 
     # Convert system image to sparse using img2simg
-    if args.deviceinfo["flash_sparse"] == "true":
+    if args.deviceinfo["flash_sparse"] == "true" and not args.split:
         logging.info("(native) make sparse system image")
         pmb.chroot.apk.install(args, ["libsparse"])
         sys_image = args.device + ".img"
@@ -329,7 +327,7 @@ def install_system_image(args):
                  " target device:")
 
     # System flash information
-    if not args.sdcard:
+    if not args.sdcard and not args.split:
         logging.info("* pmbootstrap flasher flash_rootfs")
         logging.info("  Flashes the generated rootfs image to your device:")
         logging.info("  " + args.work + "/chroot_native/home/pmos/rootfs/" +
@@ -350,9 +348,14 @@ def install_system_image(args):
                      " Use 'pmbootstrap flasher boot' to do that.)")
 
     # Export information
-    logging.info("* If the above steps do not work, you can also create"
-                 " symlinks to the generated files with 'pmbootstrap export'"
-                 " and flash outside of pmbootstrap.")
+    if args.split:
+        logging.info("* Boot and root image files have been generated, run"
+                     " 'pmbootstrap export' to create symlinks and flash"
+                     " outside of pmbootstrap.")
+    else:
+        logging.info("* If the above steps do not work, you can also create"
+                     " symlinks to the generated files with 'pmbootstrap export'"
+                     " and flash outside of pmbootstrap.")
 
 
 def install_recovery_zip(args):

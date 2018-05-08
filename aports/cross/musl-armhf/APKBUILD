@@ -3,7 +3,7 @@
 
 pkgname="musl-armhf"
 pkgver="1.1.19"
-pkgrel=4
+pkgrel=7
 arch="aarch64 x86_64 x86"
 subpackages="musl-dev-armhf:package_dev"
 
@@ -46,5 +46,5 @@ package_dev() {
     done
 }
 
-sha512sums="40630130ab2c3e7efb0faf1a4df52babef494f1cc70da17492e843193da7efd425520d187ddf8ca7202a07bd1d99dc0b61204fa8e6728c29d669720d2baff5aa  musl-1.1.19-r4-armhf.apk
-2e1855ebe735162dc8d8b9aa0c0f04e4d5374c3d06f0f95460918fb684381aee7034de2ae21467da21e789db2ca392d351903618759043803113982cdb2fd138  musl-dev-1.1.19-r4-armhf.apk"
+sha512sums="7acd9fb3f47c48eeb5f875675d0a6cf8821b7a2eca0dd293d7dcd2f176d415ae91597cb9b6eaa91810eea5552fd344211f2d3a8924d9db57f562e1677857cd7f  musl-1.1.19-r7-armhf.apk
+a45b0617d454922a88b4df36ff71ebee5c9a9d5a649f69a1c54d395dfcd38bf821d3faa00aec47e3ce00a2165805cab1ca406d3722e4e1867961df6e2e57aa8f  musl-dev-1.1.19-r7-armhf.apk"
