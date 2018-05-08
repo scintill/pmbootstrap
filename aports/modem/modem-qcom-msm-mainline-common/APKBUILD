@@ -15,4 +15,4 @@ package() {
 	install -Dm644 "$srcdir/udev.rules" "$pkgdir/usr/lib/udev/rules.d/55-$pkgname.rules"
 }
 
-sha512sums="faa827f42dbb113f4be9d748cf94e2922b436d32fe988a88c97df759e4f30c22992a90845ee24f563d7f651ecfe060fbd452ec95467a66d284d1cb815c5ccacb  udev.rules"
+sha512sums="a68d91d2747ee2c8ff3940ae02d7c6874b151ecbee6798d2b0215625b1d1e336c6d7c9ee9bebefa70c79c594bd00c9b8d059d958e875234d3bc348cfb1051147  udev.rules"

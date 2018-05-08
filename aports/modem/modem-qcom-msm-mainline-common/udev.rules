@@ -7,6 +7,6 @@ ATTR{rpmsg_name}=="DATA5_CNTL", SYMLINK+="modem"
 KERNEL!="rpmsg_ctrl[0-9]*", GOTO="qcom_rpmsg_end"
 ATTRS{rpmsg_name}!="modem", GOTO="qcom_rpmsg_end"
 
-ACTION=="add", RUN+="rpmsgexport /dev/$name DATA5_CNTL"
+ACTION=="add", RUN+="/usr/sbin/rpmsgexport /dev/$name DATA5_CNTL"
 
 LABEL="qcom_rpmsg_end"
