@@ -1,0 +1,22 @@
+# Reference: <https://postmarketos.org/devicepkg>
+pkgname="device-htc-passion"
+pkgdesc="Nexus One"
+pkgver=0.1
+pkgrel=0
+url="https://postmarketos.org"
+license="MIT"
+arch="noarch"
+options="!check"
+depends="postmarketos-base linux-htc-passion mkbootimg mesa-dri-swrast"
+makedepends="devicepkg-dev"
+source="deviceinfo"
+
+build() {
+	devicepkg_build $startdir $pkgname
+}
+
+package() {
+	devicepkg_package $startdir $pkgname
+}
+
+sha512sums="53c7ada5f4e68bd474bb3e84d7ff5bd8a5ee0c34850da9db7ab133a9a6a2b1abeb0a34686af1c7b1df25a27e41903e7a38f6fc642cba8059e119c1febec51e7c  deviceinfo"
