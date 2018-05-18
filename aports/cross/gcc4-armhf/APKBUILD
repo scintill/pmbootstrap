@@ -3,7 +3,7 @@
 # Based on: main/gcc
 
 CTARGET_ARCH=armhf
-CTARGET="armv6-alpine-linux-gnueabihf"
+CTARGET="armv6-alpine-linux-muslgnueabihf"
 CBUILDROOT="/usr/$CTARGET"
 LANG_OBJC=false
 LANG_JAVA=false
@@ -11,11 +11,13 @@ LANG_GO=false
 LANG_FORTRAN=false
 LANG_ADA=false
 options="!strip !tracedeps"
+subpackages="libgcc4-armhf:libgcc"
 
 # Wrap the package function, to make the resulting package
 # lazy-reproducible
 package() {
     # Repack the *.a files to be reproducible (see #64)
+	_builddir="$builddir"/build
     _temp="$_builddir"/_reproducible-patch
     cd "$_builddir"
     for f in $(find -name '*.a'); do
@@ -41,10 +43,11 @@ package() {
 
     # Workaround for: postmarketOS/binary-package-repo#1
     echo "Replacing hardlinks with symlinks"
-    rm -v "$pkgdir"/usr/bin/"$CTARGET"-c++
-    ln -s -v /usr/bin/"$CTARGET"-g++ "$pkgdir"/usr/bin/"$CTARGET"-c++
     rm -v "$pkgdir"/usr/bin/"$CTARGET"-gcc-"$pkgver"
     ln -s -v /usr/bin/"$CTARGET"-gcc "$pkgdir"/usr/bin/"$CTARGET"-gcc-"$pkgver"
+
+	# remove man pages
+	rm -r "$pkgdir"/usr/share/man
 }
 
 pkgname="gcc4-armhf"
@@ -57,8 +60,7 @@ url="http://gcc.gnu.org"
 arch="x86_64"
 license="GPL LGPL"
 depends="isl binutils-armhf"
-makedepends="bison flex gmp-dev mpfr-dev texinfo"
-subpackages="g++-armhf:gpp"
+makedepends="bison flex gmp-dev mpfr-dev texinfo musl-dev-armhf"
 source="ftp://gcc.gnu.org/pub/gcc/releases/gcc-$pkgver/gcc-core-$pkgver.tar.bz2
 	ftp://gcc.gnu.org/pub/gcc/releases/gcc-$pkgver/gcc-g++-$pkgver.tar.bz2
 	ftp://gcc.gnu.org/pub/gcc/releases/gcc-$pkgver/gcc-objc-$pkgver.tar.bz2
@@ -67,6 +69,8 @@ source="ftp://gcc.gnu.org/pub/gcc/releases/gcc-$pkgver/gcc-core-$pkgver.tar.bz2
 	uclibc-getipinfo.patch
 	gcc-dynamic-linker.patch
 	PR32219.patch
+	3.patch
+	4.patch
 	"
 #	ftp://gcc.gnu.org/pub/gcc/releases/gcc-$pkgver/gcc-objc-$pkgver.tar.bz2		   1
 
@@ -80,14 +84,8 @@ build ()
 	mkdir build
 	cd build
 	# https://stackoverflow.com/a/35230665
-	PFX="/usr/bin/armv6-alpine-linux-muslgnueabihf-"
 	export \
-	CFLAGS="-fgnu89-inline" CXXFLAGS="-fgnu89-inline" \
-		GCC_FOR_TARGET="${PFX}gcc" \
-		CXX_FOR_TARGET="${PFX}g++" AR_FOR_TARGET="${PFX}ar" \
-		AS_FOR_TARGET="${PFX}as" \
-		LD_FOR_TARGET="${PFX}ld" NM_FOR_TARGET="${PFX}nm" OBJDUMP_FOR_TARGET="${PFX}objdump" \
-		RANLIB_FOR_TARGET="${PFX}ranlib" STRIP_FOR_TARGET="${PFX}strip"
+	CFLAGS="-fgnu89-inline" CXXFLAGS="-fgnu89-inline"
 	../configure --prefix=/usr \
 		--mandir=/usr/share/man \
 		--infodir=/usr/share/info \
@@ -106,15 +104,18 @@ build ()
 		--enable-__cxa_atexit \
 		--enable-cld \
 		--enable-espf \
-		--enable-languages=c,c++,objc \
+		--enable-languages=c \
 		--enable-shared \
 		--enable-target-optspace \
-		--enable-tls \
-		--enable-threads \
+		--disable-tls \
+		--disable-threads \
 		--with-dynamic-linker= \
 		--with-dynamic-linker-prefix=/lib \
 		--with-system-zlib \
-		--without-system-libunwind
+		--without-system-libunwind \
+		--disable-libmudflap \
+		--disable-libgomp \
+		--program-prefix=${CTARGET}"-4.4.4-"
 
 	# buggy/old texinfo code workaround - don't build docs
 	echo MAKEINFO:= >> Makefile
@@ -126,7 +127,6 @@ build ()
 _package() {
 	cd "$srcdir"/gcc-$pkgver/build
 	make -j1 DESTDIR="${pkgdir}" install || return 1
-	ln -s gcc "$pkgdir"/usr/bin/cc
 
 	# binutils provides libiberty.a
 	rm -f "$pkgdir"/usr/lib/libiberty.a
@@ -164,8 +164,8 @@ objc() {
 libgcc() {
 	pkgdesc="GNU C compiler runtime libraries"
 	depends=
-	mkdir -p "$subpkgdir"/usr/lib
-	mv "$pkgdir"/usr/lib/libgcc_s.so.* "$subpkgdir"/usr/lib/
+	mkdir -p "$subpkgdir"/usr/${CTARGET}/lib
+	mv "$pkgdir"/usr/${CTARGET}/lib/libgcc_s.so* "$subpkgdir"/usr/${CTARGET}/lib/
 }
 
 libgomp() {
@@ -176,11 +176,13 @@ libgomp() {
 	mv "$pkgdir"/usr/lib/libgomp.so.* "$subpkgdir"/usr/lib/
 }
 
-md5sums="eb68755f64b9a4e37751992abb41c4fc  gcc-core-4.4.4.tar.bz2
-d51a6ec3eac1a90e7fc280d976ce7f80  gcc-g++-4.4.4.tar.bz2
-871cdd1a1ed8806a9bd5afcef0938fef  gcc-objc-4.4.4.tar.bz2
-c4045bfa85d8be780affd465be9d8ca8  gcc-spec-env.patch
-2db1e3482c5dd59dab70f701afa2ca80  pt_gnu_eh_frame.patch
-6cc2385c5bbd6d0da6eaedd53c8bf547  uclibc-getipinfo.patch
-6db5c87887beee75cde3cce86625b9ed  gcc-dynamic-linker.patch
-6c866c7fb8d56deb8f6d652bee64e228  PR32219.patch"
+sha512sums="67726b1d862801cd754e8cdd7d396c3ba4964dbc29051c3912c9063cacc34827875eaddcf816b6c9bdcfed3f4cecaf030efe23f0e6fcdc6821d6d9955b35b775  gcc-core-4.4.4.tar.bz2
+880e2a29bed3149bc5daff662d14fb54ea22d49515171c5d0fee3c3c2314d02c51d911abf8860f8111ae832bfdf85661112143076cb108497130213849255f68  gcc-g++-4.4.4.tar.bz2
+2d7d13dd450d59fc0900b07a0a186474daef457d44446b52b546f89cdfd09c8a6a1416232ea52ab5a11c30cadedec2e4e31f304d3bc491d77445fb16c7e611ac  gcc-objc-4.4.4.tar.bz2
+49926fa8bc5a18c30d81c34106af9f3c40b467b6ffbd484c223c6165f4bb119abbbcae88bc6e31b648ab73ca0503968a1577dfd93d630397557e533af6f0147f  gcc-spec-env.patch
+9ebf5efa76c9745989b7ecce303111498d611cb39906faf8ba57898f33c2c1de04deda3c5534b40881a0db4f7aaa6ebb3a7cf9bbd88b5765f035f917d14b000d  pt_gnu_eh_frame.patch
+e3edf75df1f27af8771bd263e1bd607f6207c4eb5b2a5e11032577deba43ea201825e3b5008a720105f24e49d2821dd77a61c7ceba7ed91b3621c0dbd9292fc6  uclibc-getipinfo.patch
+38f91cd3340d24a3b4a133d803448c0228cc0b3f6c6f8336f63b3b0c11d28aac568faab3fd66dcd77eb19030d90350026f2e887e06cd4edab45ad5d1e8f61509  gcc-dynamic-linker.patch
+39efd161be6e8616d54a048bbdcd8e1410218708ebc474fbad57661c79af0c064146e9e9a1916ae80e27d56a5ebc731ae4d6cbb53151ad82f2a89f0993dc9e7a  PR32219.patch
+53bf09a2f9a73458e71bcd2cb39daabac88c31ec602c9046cde354f46a15190d35673602a61bd440764a79c45b092b2b2b885c272d7af23d44c85c1ccaab7164  3.patch
+1e448f814ee20d350ce93c8207d5b56fe526278bb6fe0b1e29297204445be64d88e27f4723f35f011362a936014132b8f7d53d3dc963c955a94444df3fc7259d  4.patch"

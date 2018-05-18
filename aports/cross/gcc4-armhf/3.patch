@@ -1,0 +1,13 @@
+diff --git a/gcc/config.gcc b/gcc/config.gcc
+index 9e499cb..dc48bf9 100644
+--- a/gcc/config.gcc
++++ b/gcc/config.gcc
+@@ -712,7 +712,7 @@ arm*-*-linux*)			# ARM GNU/Linux with ELF
+ 	esac
+ 	tmake_file="${tmake_file} t-linux arm/t-arm"
+ 	case ${target} in
+-	arm*-*-linux-*eabi)
++	arm*-*-linux-*eabi*)
+ 	    tm_file="$tm_file arm/bpabi.h arm/linux-eabi.h"
+ 	    tmake_file="$tmake_file arm/t-arm-elf arm/t-bpabi arm/t-linux-eabi t-slibgcc-libgcc"
+   	    # The BPABI long long divmod functions return a 128-bit value in

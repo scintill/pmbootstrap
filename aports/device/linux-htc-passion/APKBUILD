@@ -15,7 +15,7 @@ HOSTCC="${CC:-gcc}"
 HOSTCC="${HOSTCC#${CROSS_COMPILE}}"
 
 # use gcc4 cross
-CC="$srcdir/arm-eabi-4.4.0/bin/arm-eabi-gcc"
+CC="armv6-alpine-linux-muslgnueabihf-4.4.4-gcc"
 
 # Source
 _repository="android_kernel_htc_qsd8k"
