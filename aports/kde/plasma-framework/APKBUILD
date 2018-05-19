@@ -1,7 +1,7 @@
 # Contributor: Bart Ribbers <bribbers@disroot.org>
 # Maintainer: Bart Ribbers <bribbers@disroot.org>
 pkgname=plasma-framework
-pkgver=5.45.0
+pkgver=5.46.0
 pkgrel=0
 pkgdesc='Plasma library and runtime components based upon KF5 and Qt5'
 arch="all"
@@ -10,7 +10,7 @@ license="GPL-2.0"
 depends=""
 depends_dev="kdoctools-dev kactivities-dev kwindowsystem-dev ki18n-dev kiconthemes-dev kpackage-dev
 			 kdeclarative-dev knotifications-dev qt5-qtdeclarative-dev qt5-qtsvg-dev kio-dev
-			 kwayland-dev kdbusaddons-dev qt5-x11extras-dev karchive-dev kguiaddons-dev
+			 kwayland-dev kdbusaddons-dev qt5-qtx11extras-dev karchive-dev kguiaddons-dev
 			 kservice-dev kbookmarks-dev kcompletion-dev kitemviews-dev kjobwidgets-dev
 			 solid-dev kxmlgui-dev kglobalaccel-dev kconfig-dev kconfigwidgets-dev kauth-dev
 			 kcoreaddons-dev kcodecs-dev kwidgetsaddons-dev kirigami2-dev"
@@ -37,4 +37,4 @@ package() {
 	cd "$builddir"
 	make DESTDIR="${pkgdir}" install
 }
-sha512sums="2158281ac206352c60d7dec0db7e98ecd121cf4e9cbf03d765eb6b4b0e419c94849d2392bb0671fcd5825ee6adb6aab4a69c4af76052d803c7a32a33d0e6f096  plasma-framework-5.45.0.tar.xz"
+sha512sums="1e6f9c28f7c9a4e2e8004df3cad5d78bbb5234e1dac2e29dccbbe22b4e9c6d8a1d192f7ee2657c9f47ae8c84acb412901c55d806d838fe0378eaef4827dde762  plasma-framework-5.46.0.tar.xz"

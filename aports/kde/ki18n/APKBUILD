@@ -1,7 +1,7 @@
 # Contributor: Bart Ribbers <bribbers@disroot.org>
 # Maintainer: Bart Ribbers <bribbers@disroot.org>
 pkgname=ki18n
-pkgver=5.45.0
+pkgver=5.46.0
 pkgrel=0
 pkgdesc='Advanced internationalization framework'
 arch="all"
@@ -33,4 +33,5 @@ package() {
 	cd "$builddir"
 	make DESTDIR="${pkgdir}" install
 }
-sha512sums="3fde0c71d7ea65064c7a926c02b55ebe082cde673e581acbb24e7f614324de401e8d48ddbca0b15a59de3a8de9be867528124a328465e099b7bf07717fbeaa71  ki18n-5.45.0.tar.xz"
+
+sha512sums="d4edabf5708311244ecc02541a0c6f9e90d118a4f0e784cf67d4be906fe890eb56225430ea78926e00da3c2fbf483fd0195f4929e579f1b9e21053696c2bcc17  ki18n-5.46.0.tar.xz"

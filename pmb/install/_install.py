@@ -46,9 +46,9 @@ def mount_device_rootfs(args, suffix="native"):
 
 def get_subpartitions_size(args):
     """
-    Calculate the size of the whole image and boot subpartition.
+    Calculate the size of the boot and root subpartition.
 
-    :returns: (full, boot) the size of the full image and boot
+    :returns: (boot, root) the size of the boot and root
               partition as integer in bytes
     """
     # Calculate required sizes first
@@ -66,7 +66,7 @@ def get_subpartitions_size(args):
     full *= 1.20
     full += 50 * 1024 * 1024
     boot += 15 * 1024 * 1024
-    return (full, boot)
+    return (boot, full - boot)
 
 
 def get_nonfree_packages(args, device):
@@ -94,12 +94,14 @@ def get_nonfree_packages(args, device):
 
 def get_kernel_package(args, device):
     """
-    Get the kernel package based on user's choice in "pmbootstrap init".
+    Get the device's kernel subpackage based on the user's choice in
+    "pmbootstrap init".
 
-    :param device: code name, e.g. "lg-mako"
-    :returns: [] or the package in a list, e.g. ["linux-postmarketos-stable"]
+    :param device: code name, e.g. "sony-amami"
+    :returns: [] or the package in a list, e.g.
+              ["device-sony-amami-kernel-mainline"]
     """
-    # Get kernels for the device
+    # Empty list: single kernel devices / "none" selected
     kernels = pmb.parse._apkbuild.kernels(args, device)
     if not kernels or args.kernel == "none":
         return []
@@ -110,10 +112,8 @@ def get_kernel_package(args, device):
                            " configured for device " + device + ". Please"
                            " run 'pmbootstrap init' to select a valid kernel.")
 
-    # Return the pkgname
-    if args.kernel == "downstream":
-        return ["linux-" + device]
-    return ["linux-postmarketos-" + args.kernel]
+    # Selected kernel subpackage
+    return ["device-" + device + "-kernel-" + args.kernel]
 
 
 def copy_files_from_chroot(args):
@@ -184,7 +184,8 @@ def set_user(args):
     if not pmb.chroot.user_exists(args, args.user, suffix):
         pmb.chroot.root(args, ["adduser", "-D", "-u", "1000", args.user],
                         suffix)
-        pmb.chroot.root(args, ["addgroup", args.user, "wheel"], suffix)
+        for group in pmb.config.install_user_groups:
+            pmb.chroot.root(args, ["addgroup", args.user, group], suffix)
 
 
 def setup_login(args):
@@ -283,11 +284,13 @@ def install_system_image(args):
     # Partition and fill image/sdcard
     logging.info("*** (3/5) PREPARE INSTALL BLOCKDEVICE ***")
     pmb.chroot.shutdown(args, True)
-    (size_image, size_boot) = get_subpartitions_size(args)
+    (size_boot, size_root) = get_subpartitions_size(args)
     if not args.rsync:
-        pmb.install.blockdevice.create(args, size_image)
-        pmb.install.partition(args, size_boot)
-    pmb.install.partitions_mount(args)
+        pmb.install.blockdevice.create(args, size_boot, size_root)
+        if not args.split:
+            pmb.install.partition(args, size_boot)
+    if not args.split:
+        pmb.install.partitions_mount(args)
 
     if args.full_disk_encryption:
         logging.info("WARNING: Full disk encryption is enabled!")
@@ -308,7 +311,7 @@ def install_system_image(args):
     pmb.chroot.shutdown(args, True)
 
     # Convert system image to sparse using img2simg
-    if args.deviceinfo["flash_sparse"] == "true":
+    if args.deviceinfo["flash_sparse"] == "true" and not args.split:
         logging.info("(native) make sparse system image")
         pmb.chroot.apk.install(args, ["libsparse"])
         sys_image = args.device + ".img"
@@ -324,7 +327,7 @@ def install_system_image(args):
                  " target device:")
 
     # System flash information
-    if not args.sdcard:
+    if not args.sdcard and not args.split:
         logging.info("* pmbootstrap flasher flash_rootfs")
         logging.info("  Flashes the generated rootfs image to your device:")
         logging.info("  " + args.work + "/chroot_native/home/pmos/rootfs/" +
@@ -345,9 +348,14 @@ def install_system_image(args):
                      " Use 'pmbootstrap flasher boot' to do that.)")
 
     # Export information
-    logging.info("* If the above steps do not work, you can also create"
-                 " symlinks to the generated files with 'pmbootstrap export'"
-                 " and flash outside of pmbootstrap.")
+    if args.split:
+        logging.info("* Boot and root image files have been generated, run"
+                     " 'pmbootstrap export' to create symlinks and flash"
+                     " outside of pmbootstrap.")
+    else:
+        logging.info("* If the above steps do not work, you can also create"
+                     " symlinks to the generated files with 'pmbootstrap export'"
+                     " and flash outside of pmbootstrap.")
 
 
 def install_recovery_zip(args):

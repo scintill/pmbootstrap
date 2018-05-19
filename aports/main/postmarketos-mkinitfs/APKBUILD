@@ -1,5 +1,5 @@
 pkgname=postmarketos-mkinitfs
-pkgver=0.6.5
+pkgver=0.6.6
 pkgrel=0
 pkgdesc="Tool to generate initramfs images for postmarketOS"
 url="https://github.com/postmarketOS"
@@ -23,6 +23,6 @@ package() {
 		"$pkgdir/sbin/mkinitfs"
 	mkdir -p "$pkgdir/etc/postmarketos-mkinitfs/hooks/"
 }
-sha512sums="9456928aee86b3d94cbf5402e5215d3942c4120dccea87899f69cf53ab115f8f29af2537e30c83665c7bce1e698e2e4c179a460035d7b04c8b2c4606e81d8194  init.sh.in
-56733693e8c57e245ffb07b439c294bc8f9012bc7dc3f8ea83cf4213859833441632d3804c836062df71a24f006f7dd8ad3b984230a7630eba0f2a1bb8c1a4ee  init_functions.sh
-b80a773efe22a6fe33ffb6f92ff279e425ff7034a4946497a628ea6c4e2300112adcde7d09d790a04b851610d3f17271001b6e3d36ba39321dba69f48b393f89  mkinitfs.sh"
+sha512sums="138d8c288599da1dc9e6d04b3ecc555beba030b876e67fdd4b68021825284e3b1b8dc299d4c82a4aeddd2ff70647cd7e93be338ac19c6deae2ed4ad449a85335  init.sh.in
+95a4931e36a42e9175758db7f3745d82ddbe17c9fcaa5cc1e9c9af18b419081f2d3b0cc6b19e6448ba5351e0e0dac03d6bde223292159f506f94481130562344  init_functions.sh
+631007eb45fb2ec79532f746cda9d2f98e3d0853c0b0bdaed82e8f931fe3ddf9127274f200726fab8d3e41dbe0dfbab2c3ad359584218b04c2b07ef54f8b332b  mkinitfs.sh"

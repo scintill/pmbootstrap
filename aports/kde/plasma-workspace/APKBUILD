@@ -1,7 +1,7 @@
 # Contributor: Bart Ribbers <bribbers@disroot.org>
 # Maintainer: Bart Ribbers <bribbers@disroot.org>
 pkgname=plasma-workspace
-pkgver=5.12.3
+pkgver=5.12.5
 pkgrel=1
 pkgdesc='KDE Plasma Workspace'
 arch="all"
@@ -11,7 +11,7 @@ depends="kwin iso-codes qt5-qtwayland kactivitymanagerd kinit milou consolekit2"
 depends_dev="krunner-dev kdesignerplugin-dev kdesignerplugin qt5-qtwayland-dev qt5-qtdeclarative-dev
 			kxmlrpcclient-dev kdelibs4support-dev plasma-framework-dev knotifyconfig-dev
 			kcmutils-dev kdesu-dev kwallet-dev ksysguard kwin-dev kguiaddons-dev
-			kjsembed-dev knewstuff-dev qt5-x11extras-dev ktexteditor-dev libksysguard-dev
+			kjsembed-dev knewstuff-dev qt5-qtx11extras-dev ktexteditor-dev libksysguard-dev
 			kwallet-dev attica-qt-dev kitemmodels-dev kscreenlocker-dev
 			qt5-qtscript-dev karchive-dev kcrash-dev kpackage-dev kactivities-dev
 			kdeclarative-dev kpty-dev kjs-dev ktextwidgets-dev sonnet-dev kauth-dev
@@ -47,4 +47,4 @@ package() {
 
 	install -Dm644 plasmawayland.desktop "$pkgdir"/usr/share/wayland-sessions/plasmawayland.desktop
 }
-sha512sums="0f00b1e14d5dc5b5763dbfa5aff4de74a2bbf3a44e2932f1916de525c3caf60d0a11e611cb2b0bcc31ff502991595808ff2728772dec787e91974700da234f53  plasma-workspace-5.12.3.tar.xz"
+sha512sums="c086b13893ab422b701e31652015618d8e3752e4ee5a8b9721eee7085307d251ea716e72bab52f458655cbf49d9a1a94deb47482fd6ecb030b20d7ea1bb52deb  plasma-workspace-5.12.5.tar.xz"
