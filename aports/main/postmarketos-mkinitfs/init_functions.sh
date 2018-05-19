@@ -41,9 +41,14 @@ setup_mdev() {
 mount_subpartitions() {
 	# Do not create subpartition mappings if pmOS_boot
 	# already exists (e.g. installed on an sdcard)
-	blkid |grep -q "pmOS_boot"  && return
+	blkid |grep -q "pmOS_boot"  && return 0
 
 	for i in /dev/mmcblk*; do
+		# Maybe no mmcblk devices are ready yet - glob doesn't expand
+		if [ "$i" = "/dev/mmcblk*" ]; then
+			return 1
+		fi
+
 		case "$(kpartx -l "$i" 2>/dev/null | wc -l)" in
 			2)
 				echo "Mount subpartitions of $i"
@@ -62,6 +67,8 @@ mount_subpartitions() {
 				;;
 		esac
 	done
+
+	return 0
 }
 
 find_root_partition() {
@@ -203,6 +210,16 @@ setup_usb_network_android() {
 	printf "%s" "1" >"$SYS/enable"
 }
 
+setup_usb_network_android_legacy() {
+	SYS=/sys/class/usb_composite
+	[ -e "$SYS" ] || return
+
+	for p in adb diag usb_mass_storage; do
+		[ -e "$SYS/$p/enable" ] && printf "%s" "0" >"$SYS/$p/enable"
+	done
+	[ -e "$SYS/rndis/enable" ] && printf "%s" "1" >"$SYS/rndis/enable"
+}
+
 setup_usb_network_configfs() {
 	CONFIGFS=/config/usb_gadget
 	[ -e "$CONFIGFS" ] || return
@@ -234,6 +251,7 @@ setup_usb_network() {
 	echo "Setup usb network"
 	# Run all usb network setup functions (add more below!)
 	setup_usb_network_android
+	setup_usb_network_android_legacy
 	setup_usb_network_configfs
 }
 
