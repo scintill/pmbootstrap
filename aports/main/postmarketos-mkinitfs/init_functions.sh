@@ -41,14 +41,9 @@ setup_mdev() {
 mount_subpartitions() {
 	# Do not create subpartition mappings if pmOS_boot
 	# already exists (e.g. installed on an sdcard)
-	blkid |grep -q "pmOS_boot"  && return 0
+	blkid |grep -q "pmOS_boot"  && return
 
 	for i in /dev/mmcblk*; do
-		# Maybe no mmcblk devices are ready yet - glob doesn't expand
-		if [ "$i" = "/dev/mmcblk*" ]; then
-			return 1
-		fi
-
 		case "$(kpartx -l "$i" 2>/dev/null | wc -l)" in
 			2)
 				echo "Mount subpartitions of $i"
@@ -67,8 +62,6 @@ mount_subpartitions() {
 				;;
 		esac
 	done
-
-	return 0
 }
 
 find_root_partition() {

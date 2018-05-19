@@ -13,11 +13,7 @@ setup_log
 # shellcheck disable=SC2154,SC2086
 [ -d /lib/modules ] && modprobe -a ${deviceinfo_modules_initfs} ext4
 setup_mdev
-if ! mount_subpartitions; then
-	echo "mount_subpartitions failed; waiting and trying again"
-	sleep 1
-	mount_subpartitions
-fi
+mount_subpartitions
 
 # Fix for framebuffer drivers, which do not have a default mode
 set_framebuffer_mode

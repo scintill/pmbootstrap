@@ -2,7 +2,7 @@
 
 pkgname="linux-htc-passion"
 pkgver=2.6.38.8
-pkgrel=0
+pkgrel=3
 pkgdesc="Nexus One kernel fork"
 arch="armhf"
 _carch="arm"
@@ -25,6 +25,8 @@ source="
 	$pkgname-$_commit.tar.gz::https://github.com/Evervolv/${_repository}/archive/${_commit}.tar.gz
 	$_config
 	01_timeconst_fix.patch
+	02_keyboard_mode_OFF.patch
+	03_framebuffer_format.patch
 	compiler-gcc6.h
 "
 builddir="$srcdir/${_repository}-${_commit}"
@@ -75,4 +77,6 @@ package() {
 sha512sums="e49026060fc1560c40b97e61d6d86e9f73fd2bc3551dae6ea93ec0536cea496e008df9f7ebaa7b33741e802084b7ac347aab233e401cb8aec1602738c4ec42f9  linux-htc-passion-95bdcb7cb84d97f5ff0049a4cb7a209fdf30d287.tar.gz
 ab2bc66591c77453ea5923e911a5fa4504bca00d00b5f9cc764c3e1ec13c801be98cc6330e5ea87ccc59ca98f5010ba11a778f81d8e35c98ec4f3dc5885cab90  config-htc-passion.armhf
 a2bb98fb8d988bbb659cae00fbaca360828300e9b98b90aed5ee0dd839c3f740696df4094a9021b813cbada06820d115aabed581a47cdd2c947e8d853c20b145  01_timeconst_fix.patch
+e53c50a82e9c579f8b873e569a3773b7abd39b2e59ba11391a45d451661ba7dbda974956cc7bcd391338fb62049c39d1a5eed51fdbc59d7746cf7392ba2e7b46  02_keyboard_mode_OFF.patch
+416b3be3aec7a6c823044ed45efb5a3ed8cc649b24a468d79bf60e837b45bbc7b0189eccc1e1f98a9925018fd0a59c40ddb5070a9b6dba1592f8eee764791f31  03_framebuffer_format.patch
 0b7b247de3b22c96145157f3adc300b486ea69735579bc73c57e5a37b1818d17fb1d66e6317001b3c9fa36563b14a179cbe8b4092005982738fbd503ccab0b55  compiler-gcc6.h"

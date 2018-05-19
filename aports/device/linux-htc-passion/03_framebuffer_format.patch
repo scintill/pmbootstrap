@@ -1,0 +1,13 @@
+diff --git a/drivers/video/msm/msm_fb.c b/drivers/video/msm/msm_fb.c
+index c54ced31..a769f241 100644
+--- a/drivers/video/msm/msm_fb.c
++++ b/drivers/video/msm/msm_fb.c
+@@ -646,6 +646,8 @@ static int msmfb_set_par(struct fb_info *info)
+ 		var->green.length = 8;
+ 		var->blue.offset = 16;
+ 		var->blue.length = 8;
++		var->transp.offset = 24;
++		var->transp.length = 0;
+ 	} else if (var->bits_per_pixel == 16) {
+ 		var->red.offset = 11;
+ 		var->red.length = 5;
