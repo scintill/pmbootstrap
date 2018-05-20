@@ -1,23 +1,25 @@
 FROM gliderlabs/alpine:3.5
 
-RUN apk add --no-cache openssl wget ca-certificates
+# install pmOS repos
+RUN apk add --no-cache \
+	openssl wget ca-certificates
+RUN wget --quiet https://raw.githubusercontent.com/postmarketOS/pmbootstrap/master/keys/pmos-5a03a13a.rsa.pub -P /etc/apk/keys
+RUN echo http://postmarketos.brixit.nl >> /etc/apk/repositories
+
+RUN apk add --no-cache \
+	gcc binutils musl-dev gcc-armhf binutils-armhf \
+	bison flex gmp-dev mpfr-dev texinfo musl-dev-armhf \
+	make \
+	perl sed installkernel bash gmp-dev bc linux-headers xz
 
 # download kernel
 RUN wget --quiet https://github.com/Evervolv/android_kernel_htc_qsd8k/archive/95bdcb7cb84d97f5ff0049a4cb7a209fdf30d287.tar.gz -O /kernel.tar.gz
 RUN tar xf /kernel.tar.gz -C /
 
-# install pmOS cross-compiler
-RUN wget --quiet https://raw.githubusercontent.com/postmarketOS/pmbootstrap/master/keys/pmos-5a03a13a.rsa.pub -P /etc/apk/keys
-RUN echo http://postmarketos.brixit.nl >> /etc/apk/repositories
-RUN apk add --no-cache gcc binutils musl-dev gcc-armhf binutils-armhf
-
 # download gcc
-ENV gccver=4.4.4
+ENV gccver=4.4.7
 RUN wget --quiet https://gcc.gnu.org/pub/gcc/releases/gcc-$gccver/gcc-core-$gccver.tar.bz2 -P /
 RUN tar xf /gcc-core-$gccver.tar.bz2 -C /
-
-# install prereqs - XXX move up
-RUN apk add --no-cache bison flex gmp-dev mpfr-dev texinfo musl-dev-armhf
 
 # patch gcc
 WORKDIR /gcc-$gccver
@@ -59,20 +61,14 @@ RUN env \
 				--disable-libgcc \
 				--program-prefix=armv6-alpine-linux-muslgnueabihf-$gccver-
 
-# XXX move up
-RUN apk add --no-cache make
 # buggy/old texinfo code workaround - don't build docs
 RUN echo MAKEINFO:= >> Makefile
-RUN make -j8
-RUN make install
+RUN make -j8 && make install
 
 # patch kernel
 WORKDIR /android_kernel_htc_qsd8k-95bdcb7cb84d97f5ff0049a4cb7a209fdf30d287
 ADD kernel/*.patch ./
 RUN for f in *.patch; do patch -p1 < $f; done
-
-# XXX move up
-RUN apk add --no-cache perl sed installkernel bash gmp-dev bc linux-headers xz
 
 # build kernel
 ADD config-htc-passion.armhf ./.config
