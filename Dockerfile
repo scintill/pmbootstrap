@@ -19,7 +19,7 @@ RUN tar xf /kernel.tar.gz -C /
 RUN apk add --no-cache mpc1-dev g++ zlib-dev
 
 # download gcc
-ENV gccver=4.8.2
+ENV gccver=4.8.0
 RUN wget --quiet https://gcc.gnu.org/pub/gcc/releases/gcc-$gccver/gcc-$gccver.tar.bz2 -P /
 RUN tar xf /gcc-$gccver.tar.bz2 -C /
 
