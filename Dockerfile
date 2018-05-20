@@ -17,7 +17,7 @@ RUN wget --quiet https://github.com/Evervolv/android_kernel_htc_qsd8k/archive/95
 RUN tar xf /kernel.tar.gz -C /
 
 # download gcc
-ENV gccver=4.9.4
+ENV gccver=4.6.4
 RUN wget --quiet https://gcc.gnu.org/pub/gcc/releases/gcc-$gccver/gcc-$gccver.tar.bz2 -P /
 RUN tar xf /gcc-$gccver.tar.bz2 -C /
 
@@ -25,8 +25,12 @@ RUN apk add --no-cache mpc1-dev
 RUN apk add --no-cache g++
 RUN apk add --no-cache zlib-dev
 
-# build gcc
+# patch gcc
 WORKDIR /gcc-$gccver
+ADD gcc/*.patch ./
+RUN for f in *.patch; do patch -p1 < $f; done
+
+# build gcc
 RUN env \
 	CFLAGS="-fgnu89-inline" CXXFLAGS="-fgnu89-inline" \
         ./configure --prefix=/usr \
@@ -62,6 +66,9 @@ RUN env \
 				--disable-libatomic \
 				--disable-libquadmath \
 				--program-prefix=armv6-alpine-linux-muslgnueabihf-$gccver-
+
+# buggy/old texinfo code workaround - don't build docs
+RUN echo MAKEINFO:= >> Makefile
 
 RUN make -j8 && make install
 
