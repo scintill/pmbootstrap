@@ -10,16 +10,3 @@ index 204218c..ed9ab12 100755
    linux-uclibc* | uclinux-uclibc* | uclinux-gnu* | kfreebsd*-gnu* | \
    knetbsd*-gnu* | netbsd*-gnu* | \
    kopensolaris*-gnu* | \
-diff --git a/gcc/config.gcc b/gcc/config.gcc
-index 6dc2427..f412902 100644
---- a/gcc/config.gcc
-+++ b/gcc/config.gcc
-@@ -823,7 +823,7 @@ arm*-*-linux*)			# ARM GNU/Linux with ELF
- 	esac
- 	tmake_file="${tmake_file} t-linux arm/t-arm"
- 	case ${target} in
--	arm*-*-linux-*eabi)
-+	arm*-*-linux-*eabi*)
- 	    tm_file="$tm_file arm/bpabi.h arm/linux-eabi.h"
- 	    tm_file="$tm_file ../../libgcc/config/arm/bpabi-lib.h"
- 	    tmake_file="$tmake_file arm/t-arm-elf arm/t-bpabi arm/t-linux-eabi t-slibgcc-libgcc"
