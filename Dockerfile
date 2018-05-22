@@ -18,15 +18,12 @@ RUN tar xf /kernel.tar.gz -C /
 
 RUN apk add --no-cache mpc1-dev g++ zlib-dev
 
-# download gcc
-ENV gccver=4.8.0
-RUN wget --quiet https://gcc.gnu.org/pub/gcc/releases/gcc-$gccver/gcc-$gccver.tar.bz2 -P /
-RUN tar xf /gcc-$gccver.tar.bz2 -C /
+ADD gcc/src /gcc
 
 # patch gcc
-WORKDIR /gcc-$gccver
-#ADD gcc/*.patch ./
-#RUN for f in *.patch; do patch -p1 < $f; done
+WORKDIR /gcc
+ADD gcc/*.patch ./
+RUN for f in *.patch; do patch -p1 < $f; done
 
 # build gcc
 RUN env \
@@ -63,7 +60,7 @@ RUN env \
 				--disable-libgcc \
 				--disable-libatomic \
 				--disable-libquadmath \
-				--program-prefix=armv6-alpine-linux-muslgnueabihf-$gccver-
+				--program-prefix=armv6-alpine-linux-muslgnueabihf-built-
 
 # buggy/old texinfo code workaround - don't build docs
 RUN echo MAKEINFO:= >> Makefile
@@ -78,4 +75,4 @@ RUN for f in *.patch; do patch -p1 < $f; done
 # build kernel
 ADD config-htc-passion.armhf ./.config
 RUN yes "" | make ARCH=arm oldconfig
-RUN make ARCH=arm CROSS_COMPILE=armv6-alpine-linux-muslgnueabihf- CC=armv6-alpine-linux-muslgnueabihf-$gccver-gcc KBUILD_BUILD_VERSION=gcc$gccver -j16
+RUN bash -c 'make ARCH=arm CROSS_COMPILE=armv6-alpine-linux-muslgnueabihf- CC=armv6-alpine-linux-muslgnueabihf-built-gcc KBUILD_BUILD_VERSION=gcc-$(</gcc/.git/HEAD) -j16'
