@@ -1,22 +1,24 @@
-FROM gliderlabs/alpine:3.5
+FROM gliderlabs/alpine:3.1
+
+RUN apk update
 
 # install pmOS repos
-RUN apk add --no-cache \
+RUN apk add \
 	openssl wget ca-certificates
 RUN wget --quiet https://raw.githubusercontent.com/postmarketOS/pmbootstrap/master/keys/pmos-5a03a13a.rsa.pub -P /etc/apk/keys
 RUN echo http://postmarketos.brixit.nl >> /etc/apk/repositories
+RUN apk update
 
-RUN apk add --no-cache \
+RUN apk add \
 	gcc binutils musl-dev gcc-armhf binutils-armhf \
 	bison flex gmp-dev mpfr-dev texinfo musl-dev-armhf \
 	make \
-	perl sed installkernel bash gmp-dev bc linux-headers xz
+	perl sed installkernel bash gmp-dev bc linux-headers xz \
+	mpc1-dev g++ zlib-dev
 
 # download kernel
 RUN wget --quiet https://github.com/Evervolv/android_kernel_htc_qsd8k/archive/95bdcb7cb84d97f5ff0049a4cb7a209fdf30d287.tar.gz -O /kernel.tar.gz
-RUN tar xf /kernel.tar.gz -C /
-
-RUN apk add --no-cache mpc1-dev g++ zlib-dev
+RUN tar xzf /kernel.tar.gz -C /
 
 ADD gcc/src /gcc
 
@@ -26,6 +28,7 @@ ADD gcc/*.patch ./
 RUN for f in *.patch; do patch -p1 < $f; done
 
 # build gcc
+RUN contrib/gcc_update --touch
 RUN env \
 	CFLAGS="-fgnu89-inline" CXXFLAGS="-fgnu89-inline" \
         ./configure --prefix=/usr \
