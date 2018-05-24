@@ -1,42 +1,50 @@
-FROM gliderlabs/alpine:3.1
+FROM gliderlabs/alpine:2.6
 
 RUN apk update
 
-# install pmOS repos
 RUN apk add \
-	openssl wget ca-certificates
-RUN wget --quiet https://raw.githubusercontent.com/postmarketOS/pmbootstrap/master/keys/pmos-5a03a13a.rsa.pub -P /etc/apk/keys
-RUN echo http://postmarketos.brixit.nl >> /etc/apk/repositories
-RUN apk update
-
-RUN apk add \
-	gcc binutils musl-dev gcc-armhf binutils-armhf \
-	bison flex gmp-dev mpfr-dev texinfo musl-dev-armhf \
+	openssl ca-certificates curl \
+	gcc binutils \
+	bison flex gmp-dev mpfr-dev texinfo \
 	make \
 	perl sed installkernel bash gmp-dev bc linux-headers xz \
 	mpc1-dev g++ zlib-dev
 
 # download kernel
-RUN wget --quiet https://github.com/Evervolv/android_kernel_htc_qsd8k/archive/95bdcb7cb84d97f5ff0049a4cb7a209fdf30d287.tar.gz -O /kernel.tar.gz
+RUN curl -s -S -L https://github.com/Evervolv/android_kernel_htc_qsd8k/archive/95bdcb7cb84d97f5ff0049a4cb7a209fdf30d287.tar.gz -o /kernel.tar.gz
 RUN tar xzf /kernel.tar.gz -C /
 
-ADD gcc/src /gcc
+# build binutils
+WORKDIR /
+RUN curl -s -S -L http://ftp.gnu.org/gnu/binutils/binutils-2.23.2.tar.bz2 -O
+RUN tar xjf /binutils-2.23.2.tar.bz2
+WORKDIR /binutils-2.23.2
+RUN ./configure --prefix=/usr \
+		--mandir /usr/share/man \
+		--build="x86_64-linux-gnu" \
+		--host="x86_64-linux-gnu" \
+		--target=armv6-alpine-linux-gnueabihf \
+		--infodir /usr/share/info \
+		--disable-multilib \
+		--enable-shared \
+		--enable-64-bit-bfd \
+		--disable-werror \
+		--disable-nls \
+		--program-prefix=armv6-alpine-linux-gnueabihf-built-
 
-# patch gcc
-WORKDIR /gcc
-ADD gcc/*.patch ./
-RUN for f in *.patch; do patch -p1 < $f; done
+RUN make -j8 && make install
 
 # build gcc
+ADD gcc/src /gcc
+WORKDIR /gcc
 RUN contrib/gcc_update --touch
 RUN env \
-	CFLAGS="-fgnu89-inline" CXXFLAGS="-fgnu89-inline" \
         ./configure --prefix=/usr \
                 --mandir=/usr/share/man \
                 --infodir=/usr/share/info \
                 --build="x86_64-linux-gnu" \
                 --host="x86_64-linux-gnu" \
-                --target=armv6-alpine-linux-muslgnueabihf \
+                --target=armv6-alpine-linux-gnueabihf \
                 --with-arch=armv6zk --with-tune=arm1176jzf-s --with-fpu=vfp --with-float=soft --with-abi=aapcs-linux \
                 --disable-altivec \
                 --disable-checking \
@@ -63,7 +71,7 @@ RUN env \
 				--disable-libgcc \
 				--disable-libatomic \
 				--disable-libquadmath \
-				--program-prefix=armv6-alpine-linux-muslgnueabihf-built-
+				--program-prefix=armv6-alpine-linux-gnueabihf-built-
 
 # buggy/old texinfo code workaround - don't build docs
 RUN echo MAKEINFO:= >> Makefile
@@ -78,4 +86,4 @@ RUN for f in *.patch; do patch -p1 < $f; done
 # build kernel
 ADD config-htc-passion.armhf ./.config
 RUN yes "" | make ARCH=arm oldconfig
-RUN bash -c 'make ARCH=arm CROSS_COMPILE=armv6-alpine-linux-muslgnueabihf- CC=armv6-alpine-linux-muslgnueabihf-built-gcc KBUILD_BUILD_VERSION=gcc-$(</gcc/.git/HEAD) -j16'
+RUN bash -c 'make ARCH=arm CROSS_COMPILE=armv6-alpine-linux-gnueabihf-built- KBUILD_BUILD_VERSION=gcc-$(</gcc/.git/HEAD) -j16'
